@@ -34,4 +34,4 @@ docker-data/
 *.tsbuildinfo
 .next/
 .turbo/
-
+/instructions.md
