@@ -10,7 +10,6 @@ A production-ready web application for University of Waterloo course planning, f
 - **Checklist Management**: Track course requirements with nested checklists
 - **Import/Export**: Save and share plans as JSON
 - **Official Data**: Pulls course data from University of Waterloo Open Data API
-- **Redis Caching**: Fast performance with intelligent caching
 - **Supabase Auth**: Secure authentication with magic links/OTP
 
 ## 🛠 Tech Stack
@@ -19,9 +18,8 @@ A production-ready web application for University of Waterloo course planning, f
 - **Runtime**: Node.js 20+ with TypeScript
 - **Framework**: Express.js
 - **Database**: PostgreSQL 16 (via Supabase)
-- **Cache**: Redis 7
 - **Auth**: Supabase JWT
-- **Jobs**: BullMQ + node-cron
+- **Jobs**: node-cron for ETL scheduling
 - **Logging**: Pino
 
 ### Frontend (To be implemented)
@@ -39,7 +37,6 @@ A production-ready web application for University of Waterloo course planning, f
 
 - Node.js 20+
 - PostgreSQL 16+ (or Supabase account)
-- Redis 7+
 - Docker & Docker Compose (for local development)
 - UW Open Data API key (optional)
 
@@ -55,17 +52,17 @@ cd UWPlanit
 ### Backend Setup
 
 ```bash
-# Navigate to API directory
-cd apps/api
+# Navigate to backend directory
+cd backend
 
 # Install dependencies
 npm install
 
 # Copy environment template
-cp .env.example .env
+cp env.example .env
 
 # Edit .env with your credentials
-# Required: DATABASE_URL, REDIS_URL, SUPABASE_JWT_SECRET
+# Required: DATABASE_URL, SUPABASE_JWT_SECRET
 ```
 
 ### Using Docker (Recommended)
@@ -217,10 +214,9 @@ Manual ETL trigger (requires admin access):
 
 ```
 UWPlanit/
-├── apps/
-│   └── api/                 # Express.js backend
+├── backend/                 # Express.js backend
 │       ├── src/
-│       │   ├── config/      # Configuration (env, db, redis, logger)
+│       │   ├── config/      # Configuration (env, db, logger)
 │       │   ├── db/          # Database schemas and migrations
 │       │   ├── jobs/        # Background jobs (ETL, scheduler)
 │       │   ├── middleware/  # Express middleware
@@ -280,9 +276,6 @@ NODE_ENV=development
 
 # Database
 DATABASE_URL=postgresql://user:pass@localhost:5432/uwplanit
-
-# Redis
-REDIS_URL=redis://localhost:6379
 
 # Supabase Auth
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co

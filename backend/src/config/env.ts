@@ -14,9 +14,6 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url(),
   
-  // Redis
-  REDIS_URL: z.string().url(),
-  
   // Supabase
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
@@ -65,10 +62,6 @@ export const config = {
   
   database: {
     url: env.DATABASE_URL,
-  },
-  
-  redis: {
-    url: env.REDIS_URL,
   },
   
   supabase: {

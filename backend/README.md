@@ -9,16 +9,14 @@ Express.js backend API for the UWPlanit course planning application.
 - **Plan Management**: Create, update, and manage course plans
 - **Checklist**: Manage course checklists with nested items
 - **ETL**: Automated data ingestion from UW Open Data API
-- **Caching**: Redis-based caching for performance
 - **Authentication**: Supabase JWT verification
-- **Rate Limiting**: Per-IP and per-user rate limits
+- **Rate Limiting**: In-memory rate limiting per IP
 
 ## Tech Stack
 
 - **Runtime**: Node.js 20+
 - **Framework**: Express.js with TypeScript
 - **Database**: PostgreSQL (via Supabase)
-- **Cache**: Redis
 - **Auth**: Supabase JWT
 - **Logging**: Pino
 - **Validation**: Zod
@@ -29,7 +27,6 @@ Express.js backend API for the UWPlanit course planning application.
 
 - Node.js 20+
 - PostgreSQL 16+ (or Supabase account)
-- Redis 7+
 - UW Open Data API key (optional for development)
 
 ### Installation
@@ -131,7 +128,6 @@ See `.env.example` for all available configuration options.
 Key variables:
 
 - `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
 - `SUPABASE_JWT_SECRET` - Supabase JWT secret for auth
 - `UW_API_KEY` - University of Waterloo API key
 - `CORS_ORIGIN` - Allowed CORS origins
@@ -139,9 +135,9 @@ Key variables:
 ## Project Structure
 
 ```
-apps/api/
+backend/
 ├── src/
-│   ├── config/         # Configuration (env, database, redis, logger)
+│   ├── config/         # Configuration (env, database, logger)
 │   ├── db/             # Database schemas and migrations
 │   ├── jobs/           # Background jobs (ETL, scheduler)
 │   ├── middleware/     # Express middleware (auth, rate-limit, errors)

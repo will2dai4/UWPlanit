@@ -5,7 +5,6 @@ import pinoHttp from 'pino-http';
 import { config } from './config/env';
 import { logger } from './config/logger';
 import { db } from './config/database';
-import { redis } from './config/redis';
 import { requestId } from './middleware/request-id';
 import { generalRateLimiter } from './middleware/rate-limit';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -98,10 +97,6 @@ const startServer = async () => {
       throw new Error('Failed to connect to database');
     }
 
-    // Test Redis connection
-    await redis.client.ping();
-    logger.info('Redis connection successful');
-
     // Create Express app
     const app = createApp();
 
@@ -131,8 +126,7 @@ const startServer = async () => {
 
         try {
           await db.close();
-          await redis.close();
-          logger.info('Database and Redis connections closed');
+          logger.info('Database connection closed');
           process.exit(0);
         } catch (error) {
           logger.error({ err: error }, 'Error during shutdown');

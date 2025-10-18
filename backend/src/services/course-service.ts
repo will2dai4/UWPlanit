@@ -1,8 +1,6 @@
 import { db } from '../config/database';
-import { redis } from '../config/redis';
 import { Course, CourseRelation, CytoscapeElements } from '../types';
 import { buildGraphElements } from '../utils/graph-builder';
-import { cacheKeys, cacheTTL } from '../utils/cache-keys';
 import { logger } from '../config/logger';
 
 export class CourseService {
@@ -86,22 +84,8 @@ export class CourseService {
    * Get course by subject and catalog number
    */
   async getCourseByCode(subject: string, catalogNumber: string): Promise<Course | null> {
-    // Check cache first
-    const cacheKey = cacheKeys.course(subject, catalogNumber);
-    const cached = await redis.get<Course>(cacheKey);
-    if (cached) {
-      logger.debug({ cacheKey }, 'Course cache hit');
-      return cached;
-    }
-
     const query = 'SELECT * FROM courses WHERE subject = $1 AND catalog_number = $2';
-    const course = await db.queryOne<Course>(query, [subject.toUpperCase(), catalogNumber]);
-
-    if (course) {
-      await redis.set(cacheKey, course, cacheTTL.course);
-    }
-
-    return course;
+    return db.queryOne<Course>(query, [subject.toUpperCase(), catalogNumber]);
   }
 
   /**
@@ -119,14 +103,6 @@ export class CourseService {
    * Get global graph (all courses and relations)
    */
   async getGlobalGraph(): Promise<CytoscapeElements> {
-    // Check cache first
-    const cacheKey = cacheKeys.graphGlobal();
-    const cached = await redis.get<CytoscapeElements>(cacheKey);
-    if (cached) {
-      logger.info('Global graph cache hit');
-      return cached;
-    }
-
     logger.info('Building global graph from database');
 
     // Get all courses
@@ -138,9 +114,6 @@ export class CourseService {
     // Build graph
     const elements = buildGraphElements(courses, relations);
 
-    // Cache the result
-    await redis.set(cacheKey, elements, cacheTTL.graph);
-
     return elements;
   }
 
@@ -149,14 +122,6 @@ export class CourseService {
    */
   async getSubjectGraph(subject: string): Promise<CytoscapeElements> {
     const upperSubject = subject.toUpperCase();
-
-    // Check cache first
-    const cacheKey = cacheKeys.graphSubject(upperSubject);
-    const cached = await redis.get<CytoscapeElements>(cacheKey);
-    if (cached) {
-      logger.info({ subject: upperSubject }, 'Subject graph cache hit');
-      return cached;
-    }
 
     logger.info({ subject: upperSubject }, 'Building subject graph from database');
 
@@ -182,21 +147,8 @@ export class CourseService {
     // Build graph
     const elements = buildGraphElements(courses, relations);
 
-    // Cache the result
-    await redis.set(cacheKey, elements, cacheTTL.graph);
-
     return elements;
-  }
-
-  /**
-   * Invalidate all graph caches
-   */
-  async invalidateGraphCaches(): Promise<void> {
-    await redis.delPattern(cacheKeys.allGraphs());
-    await redis.delPattern(cacheKeys.allSearches());
-    logger.info('Graph caches invalidated');
   }
 }
 
 export const courseService = new CourseService();
-

@@ -1,9 +1,6 @@
 import { db } from '../config/database';
-import { redis } from '../config/redis';
 import { config } from '../config/env';
 import { logger } from '../config/logger';
-import { courseService } from '../services/course-service';
-import { cacheKeys } from '../utils/cache-keys';
 
 /**
  * UW Open Data API Course Response (simplified)
@@ -30,27 +27,8 @@ export class ETLService {
   /**
    * Check if ETL is currently running
    */
-  async isETLRunning(): Promise<boolean> {
-    const lockKey = cacheKeys.etlLock();
-    const exists = await redis.exists(lockKey);
-    return exists || this.isRunning;
-  }
-
-  /**
-   * Acquire ETL lock
-   */
-  private async acquireLock(): Promise<boolean> {
-    const lockKey = cacheKeys.etlLock();
-    const acquired = await redis.client.set(lockKey, '1', 'EX', 3600, 'NX');
-    return acquired === 'OK';
-  }
-
-  /**
-   * Release ETL lock
-   */
-  private async releaseLock(): Promise<void> {
-    const lockKey = cacheKeys.etlLock();
-    await redis.del(lockKey);
+  isETLRunning(): boolean {
+    return this.isRunning;
   }
 
   /**
@@ -206,12 +184,6 @@ export class ETLService {
       throw new Error('ETL is already running');
     }
 
-    // Try to acquire lock
-    const lockAcquired = await this.acquireLock();
-    if (!lockAcquired) {
-      throw new Error('ETL lock could not be acquired (another process may be running)');
-    }
-
     this.isRunning = true;
     let added = 0;
     let updated = 0;
@@ -302,9 +274,6 @@ export class ETLService {
         ['completed', added, updated, JSON.stringify(errors), runId]
       );
 
-      // Invalidate caches
-      await courseService.invalidateGraphCaches();
-
       logger.info(
         { runId, added, updated, errorCount: errors.length },
         'ETL process completed'
@@ -332,10 +301,8 @@ export class ETLService {
       throw error;
     } finally {
       this.isRunning = false;
-      await this.releaseLock();
     }
   }
 }
 
 export const etlService = new ETLService();
-
