@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -18,11 +18,11 @@ export function SearchBar({ value, onChange, placeholder = 'Search courses...', 
   const [localValue, setLocalValue] = useState(value)
 
   // Debounced onChange
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedOnChange = useCallback(
-    debounce((val: string) => {
-      onChange(val)
-    }, 300),
+  const debouncedOnChange = useMemo(
+    () =>
+      debounce((val: string) => {
+        onChange(val)
+      }, 300),
     [onChange]
   )
 

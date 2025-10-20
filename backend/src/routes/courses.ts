@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { courseService } from '../services/course-service';
 import { courseSearchSchema, uuidSchema } from '../utils/validators';
-import { logger } from '../config/logger';
 
 const router = Router();
 

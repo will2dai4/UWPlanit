@@ -49,80 +49,53 @@ export const SUBJECTS = [
 ] as const
 
 export const GRAPH_LAYOUTS = {
-  'cose-bilkent': 'Hierarchical',
-  dagre: 'Directed',
-  concentric: 'Concentric',
-  grid: 'Grid',
+  force: 'Force-Directed',
+  'force-strong': 'Force-Directed (Strong)',
+  'force-weak': 'Force-Weak (Weak)',
 } as const
 
-export const DEFAULT_GRAPH_STYLE = [
-  {
-    selector: 'node',
-    style: {
-      'background-color': '#3B82F6',
-      label: 'data(label)',
-      'text-valign': 'center',
-      'text-halign': 'center',
-      color: '#fff',
-      'text-outline-width': 2,
-      'text-outline-color': '#3B82F6',
-      width: 'mapData(level, 100, 900, 40, 80)',
-      height: 'mapData(level, 100, 900, 40, 80)',
-      'font-size': '12px',
-      'font-weight': 'bold',
-    },
+// VISX node styling
+export const NODE_RADIUS = 8
+export const NODE_RADIUS_SELECTED = 12
+export const NODE_LABEL_OFFSET = 15
+
+// Layout configurations for d3-force
+export const LAYOUT_CONFIGS = {
+  force: {
+    strength: -300,
+    distance: 100,
+    iterations: 300,
   },
-  {
-    selector: 'edge',
-    style: {
-      width: 2,
-      'line-color': '#9CA3AF',
-      'target-arrow-color': '#9CA3AF',
-      'target-arrow-shape': 'triangle',
-      'curve-style': 'bezier',
-    },
+  'force-strong': {
+    strength: -500,
+    distance: 150,
+    iterations: 400,
   },
-  {
-    selector: 'edge[rtype="PREREQ"]',
-    style: {
-      'line-color': RELATION_COLORS.PREREQ,
-      'target-arrow-color': RELATION_COLORS.PREREQ,
-      'line-style': 'solid',
-    },
+  'force-weak': {
+    strength: -150,
+    distance: 80,
+    iterations: 250,
   },
-  {
-    selector: 'edge[rtype="COREQ"]',
-    style: {
-      'line-color': RELATION_COLORS.COREQ,
-      'target-arrow-color': RELATION_COLORS.COREQ,
-      'line-style': 'dashed',
-    },
-  },
-  {
-    selector: 'edge[rtype="ANTIREQ"]',
-    style: {
-      'line-color': RELATION_COLORS.ANTIREQ,
-      'target-arrow-color': RELATION_COLORS.ANTIREQ,
-      'line-style': 'dotted',
-    },
-  },
-  {
-    selector: 'edge[rtype="EQUIV"]',
-    style: {
-      'line-color': RELATION_COLORS.EQUIV,
-      'target-arrow-color': RELATION_COLORS.EQUIV,
-      'line-style': 'solid',
-      width: 1,
-    },
-  },
-  {
-    selector: ':selected',
-    style: {
-      'background-color': '#F59E0B',
-      'line-color': '#F59E0B',
-      'target-arrow-color': '#F59E0B',
-      'source-arrow-color': '#F59E0B',
-    },
-  },
-]
+} as const
+
+// Get node color based on level
+export const getNodeColor = (level?: number): string => {
+  if (!level) return '#3B82F6' // Default blue
+  
+  if (level < 200) return '#6366F1' // Indigo for 100-level
+  if (level < 300) return '#3B82F6' // Blue for 200-level
+  if (level < 400) return '#0EA5E9' // Sky for 300-level
+  if (level < 500) return '#06B6D4' // Cyan for 400-level
+  return '#8B5CF6' // Violet for 500+ level
+}
+
+// Get node radius based on level
+export const getNodeRadius = (level?: number, selected: boolean = false): number => {
+  const base = selected ? NODE_RADIUS_SELECTED : NODE_RADIUS
+  if (!level) return base
+  
+  // Scale radius based on level (higher levels = slightly larger)
+  const scale = 1 + (level / 1000) * 0.5
+  return base * scale
+}
 

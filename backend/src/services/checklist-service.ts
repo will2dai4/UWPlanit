@@ -187,7 +187,7 @@ export class ChecklistService {
           label: item.label,
           group_key: item.group_key,
           required_count: item.required_count,
-          parent_id: parentId,
+          parent_id: parentId || undefined,
           position: item.position,
         });
 

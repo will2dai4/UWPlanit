@@ -3,19 +3,28 @@ import { config } from '../config/env';
 import { logger } from '../config/logger';
 
 /**
- * UW Open Data API Course Response (simplified)
+ * UW Open Data API v3 Course Response
  */
-interface UWCourse {
-  subject: string;
-  catalog_number: string;
+interface UWCourseV3 {
+  courseId: string;
+  courseOfferNumber: number;
+  termCode: string;
+  termName: string;
+  associatedAcademicCareer: string;
+  associatedAcademicGroupCode: string;
+  associatedAcademicOrgCode: string;
+  subjectCode: string;
+  catalogNumber: string;
   title: string;
-  units: number;
+  descriptionAbbreviated: string;
   description: string;
-  prerequisites?: string;
-  corequisites?: string;
-  antirequisites?: string;
-  terms_offered?: string[];
-  faculty?: string;
+  gradingBasis: string;
+  courseComponentCode: string;
+  enrollConsentCode: string;
+  enrollConsentDescription: string;
+  dropConsentCode: string;
+  dropConsentDescription: string;
+  requirementsDescription: string;
 }
 
 /**
@@ -32,12 +41,36 @@ export class ETLService {
   }
 
   /**
-   * Fetch courses from UW Open Data API
+   * Generate term code for UW API v3
+   * Format: {century}{year}{term}
+   * - Century: 0 for 1900s, 1 for 2000s, 2 for 2100s
+   * - Year: Last 2 digits of year
+   * - Term: 1 for Winter (Jan-Apr), 5 for Spring (May-Aug), 9 for Fall (Sep-Dec)
+   * 
+   * Examples:
+   * - Winter 2024: 1241
+   * - Spring 2024: 1245
+   * - Fall 2024: 1249
+   */
+  private generateTermCode(year: number, term: 'winter' | 'spring' | 'fall'): string {
+    const century = Math.floor(year / 100) - 19; // 2024 -> 1, 1998 -> 0
+    const yearDigits = year % 100; // 2024 -> 24
+    const termDigit = term === 'winter' ? '1' : term === 'spring' ? '5' : '9';
+    
+    return `${century}${yearDigits.toString().padStart(2, '0')}${termDigit}`;
+  }
+
+  /**
+   * Fetch courses from UW Open Data API (v3)
+   * v3 API uses term codes, not subjects
+   * Endpoint: /v3/Courses/{termCode}
+   * 
+   * Note: UW API v3 returns ALL courses for a term in a single request
+   * No pagination needed - the API returns the complete dataset
    */
   private async fetchUWCourses(
-    subject?: string,
-    cursor?: string
-  ): Promise<{ courses: UWCourse[]; nextCursor?: string }> {
+    termCode: string
+  ): Promise<{ courses: UWCourseV3[] }> {
     const baseUrl = config.uwApi.baseUrl;
     const apiKey = config.uwApi.apiKey;
 
@@ -47,49 +80,60 @@ export class ETLService {
     }
 
     try {
-      // Build URL
-      let url = `${baseUrl}/courses`;
-      const params = new URLSearchParams();
-      
-      if (subject) {
-        params.append('subject', subject);
-      }
-      if (cursor) {
-        params.append('cursor', cursor);
-      }
+      // v3 API endpoint: /v3/Courses/{termCode}
+      // Note: UW API v3 returns ALL courses for a term in one request
+      const url = `${baseUrl}/Courses/${termCode}`;
 
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
+      logger.info({ url, termCode }, 'Fetching from UW API v3');
 
-      // Fetch from API
+      // Fetch from API with X-API-KEY header
       const response = await fetch(url, {
         headers: {
-          'X-API-Key': apiKey,
           'Accept': 'application/json',
+          'X-API-KEY': apiKey,
         },
       });
 
       if (!response.ok) {
-        throw new Error(`UW API returned ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`UW API v3 returned ${response.status}: ${response.statusText}\n${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
-      return {
-        courses: data.data || [],
-        nextCursor: data.meta?.next_cursor,
-      };
+      // v3 API returns an array directly with ALL courses for the term
+      let courses: UWCourseV3[] = [];
+
+      if (Array.isArray(data)) {
+        // Direct array response - this is the expected format
+        courses = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        // Some APIs wrap in a data object
+        courses = data.data;
+      } else if (data.courses && Array.isArray(data.courses)) {
+        // Some APIs use a courses wrapper
+        courses = data.courses;
+      } else {
+        logger.warn({ data }, 'Unexpected response format from UW API v3');
+        courses = [];
+      }
+
+      logger.info(
+        { termCode, totalCourses: courses.length },
+        'Fetched all courses for term'
+      );
+
+      return { courses };
     } catch (error) {
-      logger.error({ err: error }, 'Failed to fetch courses from UW API');
+      logger.error({ err: error, termCode }, 'Failed to fetch courses from UW API v3');
       throw error;
     }
   }
 
   /**
-   * Upsert a course into the database
+   * Upsert a course into the database (v3 format)
    */
-  private async upsertCourse(course: UWCourse): Promise<string> {
+  private async upsertCourse(course: UWCourseV3): Promise<string> {
     const query = `
       INSERT INTO courses (subject, catalog_number, title, units, description, terms_offered, faculty, raw_json)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -105,14 +149,18 @@ export class ETLService {
       RETURNING course_id
     `;
 
+    // Extract units from courseComponentCode or default to 0.5
+    // This is a heuristic - you may need to adjust based on actual data
+    const units = 0.5; // Default, adjust as needed
+
     const result = await db.queryOne<{ course_id: string }>(query, [
-      course.subject,
-      course.catalog_number,
+      course.subjectCode,
+      course.catalogNumber,
       course.title,
-      course.units,
-      course.description,
-      course.terms_offered || [],
-      course.faculty || null,
+      units,
+      course.description || course.descriptionAbbreviated,
+      [course.termName], // Store term name as array
+      course.associatedAcademicOrgCode || null,
       course,
     ]);
 
@@ -120,15 +168,17 @@ export class ETLService {
   }
 
   /**
-   * Parse prerequisite/corequisite/antirequisite text and create relations
-   * This is a simplified parser - in production, you'd want more robust parsing
+   * Parse requirements description and create relations (v3 format)
+   * v3 API has requirementsDescription field that contains prereqs, coreqs, and antireqs
    */
   private async parseAndCreateRelations(
     courseId: string,
-    prerequisites?: string,
-    corequisites?: string,
-    antirequisites?: string
+    requirementsDescription?: string
   ): Promise<void> {
+    if (!requirementsDescription) {
+      return;
+    }
+
     // Simple regex-based parser to extract course codes (e.g., "CS 246", "MATH135")
     const courseCodePattern = /([A-Z]{2,10})\s*(\d{3}[A-Z]?)/gi;
 
@@ -157,23 +207,30 @@ export class ETLService {
       }
     };
 
-    if (prerequisites) {
-      await extractCourses(prerequisites, 'PREREQ');
+    // Parse requirements description
+    const lowerReq = requirementsDescription.toLowerCase();
+    
+    // Look for prerequisite indicators
+    if (lowerReq.includes('prereq') || lowerReq.includes('prerequisite')) {
+      await extractCourses(requirementsDescription, 'PREREQ');
     }
-
-    if (corequisites) {
-      await extractCourses(corequisites, 'COREQ');
+    
+    // Look for corequisite indicators
+    if (lowerReq.includes('coreq') || lowerReq.includes('corequisite')) {
+      await extractCourses(requirementsDescription, 'COREQ');
     }
-
-    if (antirequisites) {
-      await extractCourses(antirequisites, 'ANTIREQ');
+    
+    // Look for antirequisite indicators
+    if (lowerReq.includes('antireq') || lowerReq.includes('antirequisite')) {
+      await extractCourses(requirementsDescription, 'ANTIREQ');
     }
   }
 
   /**
    * Run ETL process
+   * @param termCodes - Optional array of term codes to fetch. If not provided, will fetch current and next term
    */
-  async runETL(subjects?: string[]): Promise<{
+  async runETL(termCodes?: string[]): Promise<{
     success: boolean;
     added: number;
     updated: number;
@@ -198,68 +255,90 @@ export class ETLService {
     const runId = runRecord!.run_id;
 
     try {
-      logger.info({ runId, subjects }, 'Starting ETL process');
+      // If no term codes provided, generate current and next term
+      let termsToProcess: string[];
+      
+      if (termCodes && termCodes.length > 0) {
+        termsToProcess = termCodes;
+      } else {
+        // Generate term codes for current term and next term
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-12
+        
+        // Determine current term
+        let currentTerm: 'winter' | 'spring' | 'fall';
+        if (month >= 1 && month <= 4) {
+          currentTerm = 'winter';
+        } else if (month >= 5 && month <= 8) {
+          currentTerm = 'spring';
+        } else {
+          currentTerm = 'fall';
+        }
+        
+        // Generate current and next two terms
+        termsToProcess = [];
+        termsToProcess.push(this.generateTermCode(year, currentTerm));
+        
+        // Add next term
+        if (currentTerm === 'winter') {
+          termsToProcess.push(this.generateTermCode(year, 'spring'));
+        } else if (currentTerm === 'spring') {
+          termsToProcess.push(this.generateTermCode(year, 'fall'));
+        } else {
+          termsToProcess.push(this.generateTermCode(year + 1, 'winter'));
+        }
+      }
 
-      // Get list of subjects to process (default to CS and MATH as per instructions)
-      const subjectsToProcess = subjects || ['CS', 'MATH'];
+      logger.info({ runId, termCodes: termsToProcess }, 'Starting ETL process');
 
-      for (const subject of subjectsToProcess) {
-        logger.info({ subject }, 'Processing subject');
+      for (const termCode of termsToProcess) {
+        logger.info({ termCode }, 'Processing term');
 
-        let cursor: string | undefined;
-        let pageCount = 0;
+        try {
+          // Fetch courses for this term
+          const { courses } = await this.fetchUWCourses(termCode);
 
-        do {
-          try {
-            // Fetch courses for this subject
-            const { courses, nextCursor } = await this.fetchUWCourses(subject, cursor);
+          logger.info({ termCode, courseCount: courses.length }, 'Fetched courses');
 
-            logger.info({ subject, pageCount, courseCount: courses.length }, 'Fetched courses');
+          // Process each course
+          for (const course of courses) {
+            try {
+              // Check if course exists
+              const existing = await db.queryOne<{ course_id: string }>(
+                'SELECT course_id FROM courses WHERE subject = $1 AND catalog_number = $2',
+                [course.subjectCode, course.catalogNumber]
+              );
 
-            // Process each course
-            for (const course of courses) {
-              try {
-                // Check if course exists
-                const existing = await db.queryOne<{ course_id: string }>(
-                  'SELECT course_id FROM courses WHERE subject = $1 AND catalog_number = $2',
-                  [course.subject, course.catalog_number]
-                );
+              // Upsert course
+              const courseId = await this.upsertCourse(course);
 
-                // Upsert course
-                const courseId = await this.upsertCourse(course);
-
-                if (existing) {
-                  updated++;
-                } else {
-                  added++;
-                }
-
-                // Parse and create relations
-                await this.parseAndCreateRelations(
-                  courseId,
-                  course.prerequisites,
-                  course.corequisites,
-                  course.antirequisites
-                );
-              } catch (error) {
-                const errMsg = `Failed to process course ${course.subject} ${course.catalog_number}: ${error}`;
-                logger.error({ err: error, course }, errMsg);
-                errors.push(errMsg);
+              if (existing) {
+                updated++;
+              } else {
+                added++;
               }
+
+              // Parse and create relations
+              await this.parseAndCreateRelations(
+                courseId,
+                course.requirementsDescription
+              );
+            } catch (error) {
+              const errMsg = `Failed to process course ${course.subjectCode} ${course.catalogNumber}: ${error}`;
+              logger.error({ err: error, course }, errMsg);
+              errors.push(errMsg);
             }
-
-            cursor = nextCursor;
-            pageCount++;
-
-            // Small delay to avoid hammering the API
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (error) {
-            const errMsg = `Failed to fetch page ${pageCount} for subject ${subject}: ${error}`;
-            logger.error({ err: error, subject }, errMsg);
-            errors.push(errMsg);
-            break; // Move to next subject
           }
-        } while (cursor);
+
+          // Small delay to avoid hammering the API
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          const errMsg = `Failed to fetch courses for term ${termCode}: ${error}`;
+          logger.error({ err: error, termCode }, errMsg);
+          errors.push(errMsg);
+          // Continue to next term
+        }
       }
 
       // Update ETL run record

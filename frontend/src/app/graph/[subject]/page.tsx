@@ -45,7 +45,7 @@ export default function SubjectGraphPage({ params }: { params: Promise<{ subject
           </div>
         )}
 
-        {graphData && !isLoading && <GraphCanvas elements={graphData} layout="dagre" />}
+        {graphData && !isLoading && <GraphCanvas elements={graphData} layout="force" />}
       </div>
     </div>
   )

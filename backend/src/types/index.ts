@@ -46,31 +46,35 @@ export interface CourseRelation {
 }
 
 /**
- * Cytoscape graph element types
+ * VISX graph element types
  */
-export interface CytoscapeNode {
-  data: {
-    id: string;
-    label: string;
-    subject: string;
-    catalog_number: string;
-    title?: string;
-    units?: number;
-    level?: number;
-    faculty?: string;
-  };
+export interface GraphNode {
+  id: string;
+  label: string;
+  subject: string;
+  catalog_number: string;
+  title?: string;
+  units?: number;
+  level?: number;
+  faculty?: string;
 }
 
-export interface CytoscapeEdge {
-  data: {
-    id: string;
-    source: string;
-    target: string;
-    rtype: RelationType;
-    note?: string;
-  };
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  rtype: RelationType;
+  note?: string;
 }
 
+export interface GraphElements {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+// Legacy type aliases for backward compatibility
+export type CytoscapeNode = { data: GraphNode };
+export type CytoscapeEdge = { data: GraphEdge };
 export interface CytoscapeElements {
   nodes: CytoscapeNode[];
   edges: CytoscapeEdge[];

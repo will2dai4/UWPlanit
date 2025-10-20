@@ -36,14 +36,14 @@ export function FiltersPanel({ filters, onChange, onClear }: FiltersPanelProps) 
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
           <Select
-            value={filters.subject || ''}
-            onValueChange={(value) => updateFilter('subject', value || undefined)}
+            value={filters.subject || 'all'}
+            onValueChange={(value) => updateFilter('subject', value === 'all' ? undefined : value)}
           >
             <SelectTrigger id="subject">
               <SelectValue placeholder="All subjects" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All subjects</SelectItem>
+              <SelectItem value="all">All subjects</SelectItem>
               {SUBJECTS.map((subject) => (
                 <SelectItem key={subject} value={subject}>
                   {subject}
@@ -57,14 +57,14 @@ export function FiltersPanel({ filters, onChange, onClear }: FiltersPanelProps) 
         <div className="space-y-2">
           <Label htmlFor="level">Level</Label>
           <Select
-            value={filters.level?.toString() || ''}
-            onValueChange={(value) => updateFilter('level', value ? parseInt(value) : undefined)}
+            value={filters.level?.toString() || 'all'}
+            onValueChange={(value) => updateFilter('level', value === 'all' ? undefined : parseInt(value))}
           >
             <SelectTrigger id="level">
               <SelectValue placeholder="All levels" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All levels</SelectItem>
+              <SelectItem value="all">All levels</SelectItem>
               {LEVELS.map((level) => (
                 <SelectItem key={level} value={level.toString()}>
                   {level}
@@ -78,14 +78,14 @@ export function FiltersPanel({ filters, onChange, onClear }: FiltersPanelProps) 
         <div className="space-y-2">
           <Label htmlFor="term">Term Offered</Label>
           <Select
-            value={filters.term || ''}
-            onValueChange={(value) => updateFilter('term', value || undefined)}
+            value={filters.term || 'all'}
+            onValueChange={(value) => updateFilter('term', value === 'all' ? undefined : value)}
           >
             <SelectTrigger id="term">
               <SelectValue placeholder="All terms" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All terms</SelectItem>
+              <SelectItem value="all">All terms</SelectItem>
               {TERMS.map((term) => (
                 <SelectItem key={term} value={term}>
                   {term}
@@ -99,14 +99,14 @@ export function FiltersPanel({ filters, onChange, onClear }: FiltersPanelProps) 
         <div className="space-y-2">
           <Label htmlFor="faculty">Faculty</Label>
           <Select
-            value={filters.faculty || ''}
-            onValueChange={(value) => updateFilter('faculty', value || undefined)}
+            value={filters.faculty || 'all'}
+            onValueChange={(value) => updateFilter('faculty', value === 'all' ? undefined : value)}
           >
             <SelectTrigger id="faculty">
               <SelectValue placeholder="All faculties" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All faculties</SelectItem>
+              <SelectItem value="all">All faculties</SelectItem>
               {FACULTIES.map((faculty) => (
                 <SelectItem key={faculty} value={faculty}>
                   {faculty}

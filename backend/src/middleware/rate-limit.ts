@@ -16,7 +16,7 @@ export const generalRateLimiter = rateLimit({
       message: 'Too many requests, please try again later',
     },
   },
-  skip: (req) => {
+  skip: () => {
     // Skip rate limiting in test environment
     return config.isTest;
   },
@@ -36,7 +36,7 @@ export const writeRateLimiter = rateLimit({
       message: 'Too many write requests, please try again later',
     },
   },
-  skip: (req) => {
+  skip: () => {
     return config.isTest;
   },
 });
@@ -55,7 +55,7 @@ export const authRateLimiter = rateLimit({
       message: 'Too many authentication attempts, please try again later',
     },
   },
-  skip: (req) => {
+  skip: () => {
     return config.isTest;
   },
 });

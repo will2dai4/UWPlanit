@@ -8,7 +8,7 @@ const router = Router();
  * GET /api/v1/graph/global
  * Get the global course graph (all courses and relations)
  */
-router.get('/global', async (req, res, next) => {
+router.get('/global', async (_req, res, next) => {
   try {
     const elements = await courseService.getGlobalGraph();
 

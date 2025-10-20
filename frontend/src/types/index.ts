@@ -24,33 +24,34 @@ export interface CourseRelation {
   note?: string
 }
 
-// Cytoscape types
-export interface CytoscapeNode {
-  data: {
-    id: string
-    label: string
-    units: number
-    level: number
-    subject: string
-    catalog_number: string
-    title?: string
-    faculty?: string
-  }
+// VISX Graph types
+export interface GraphNode {
+  id: string
+  label: string
+  subject: string
+  catalog_number: string
+  title?: string
+  units?: number
+  level?: number
+  faculty?: string
+  // Layout properties (computed by d3-force)
+  x?: number
+  y?: number
+  vx?: number
+  vy?: number
 }
 
-export interface CytoscapeEdge {
-  data: {
-    id: string
-    source: string
-    target: string
-    rtype: RelationType
-    note?: string
-  }
+export interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  rtype: RelationType
+  note?: string
 }
 
 export interface GraphElements {
-  nodes: CytoscapeNode[]
-  edges: CytoscapeEdge[]
+  nodes: GraphNode[]
+  edges: GraphEdge[]
 }
 
 // Plan types

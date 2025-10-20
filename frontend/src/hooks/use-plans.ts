@@ -2,17 +2,28 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import type { Plan, PlanItem, ChecklistItem, PlanExport } from '@/types'
 
+interface ApiResponse<T> {
+  data: T
+  meta?: Record<string, unknown>
+}
+
 export function usePlans() {
   return useQuery({
     queryKey: ['plans'],
-    queryFn: () => apiClient.get<Plan[]>('/plans/mine'),
+    queryFn: async () => {
+      const response = await apiClient.get<{data: Plan[]}>('/plans/mine')
+      return response.data
+    },
   })
 }
 
 export function usePlan(planId: string) {
   return useQuery({
     queryKey: ['plan', planId],
-    queryFn: () => apiClient.get<Plan>(`/plans/${planId}`),
+    queryFn: async () => {
+      const response = await apiClient.get<{data: Plan}>(`/plans/${planId}`)
+      return response.data
+    },
     enabled: !!planId,
   })
 }
@@ -20,7 +31,10 @@ export function usePlan(planId: string) {
 export function usePlanItems(planId: string) {
   return useQuery({
     queryKey: ['plan-items', planId],
-    queryFn: () => apiClient.get<PlanItem[]>(`/plans/${planId}/items`),
+    queryFn: async () => {
+      const response = await apiClient.get<{data: PlanItem[]}>(`/plans/${planId}/items`)
+      return response.data
+    },
     enabled: !!planId,
   })
 }
@@ -28,7 +42,10 @@ export function usePlanItems(planId: string) {
 export function useChecklistItems(planId: string) {
   return useQuery({
     queryKey: ['checklist-items', planId],
-    queryFn: () => apiClient.get<ChecklistItem[]>(`/plans/${planId}/checklist`),
+    queryFn: async () => {
+      const response = await apiClient.get<{data: ChecklistItem[]}>(`/plans/${planId}/checklist`)
+      return response.data
+    },
     enabled: !!planId,
   })
 }
@@ -37,7 +54,10 @@ export function useCreatePlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { name: string }) => apiClient.post<Plan>('/plans', data),
+    mutationFn: async (data: { name: string }) => {
+      const response = await apiClient.post<{data: Plan}>('/plans', data)
+      return response.data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] })
     },
@@ -48,8 +68,10 @@ export function useUpdatePlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ planId, data }: { planId: string; data: Partial<Plan> }) =>
-      apiClient.patch<Plan>(`/plans/${planId}`, data),
+    mutationFn: async ({ planId, data }: { planId: string; data: Partial<Plan> }) => {
+      const response = await apiClient.patch<{data: Plan}>(`/plans/${planId}`, data)
+      return response.data
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plans'] })
       queryClient.invalidateQueries({ queryKey: ['plan', variables.planId] })
@@ -72,13 +94,16 @@ export function useCreatePlanItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       planId,
       data,
     }: {
       planId: string
       data: { course_id: string; term?: string; pos_x: number; pos_y: number }
-    }) => apiClient.post<PlanItem>(`/plans/${planId}/items`, data),
+    }) => {
+      const response = await apiClient.post<{data: PlanItem}>(`/plans/${planId}/items`, data)
+      return response.data
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plan-items', variables.planId] })
     },
@@ -89,8 +114,10 @@ export function useUpdatePlanItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ planId, itemId, data }: { planId: string; itemId: string; data: Partial<PlanItem> }) =>
-      apiClient.patch<PlanItem>(`/plans/${planId}/items/${itemId}`, data),
+    mutationFn: async ({ planId, itemId, data }: { planId: string; itemId: string; data: Partial<PlanItem> }) => {
+      const response = await apiClient.patch<{data: PlanItem}>(`/plans/${planId}/items/${itemId}`, data)
+      return response.data
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plan-items', variables.planId] })
     },
@@ -113,13 +140,16 @@ export function useCreateChecklistItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       planId,
       data,
     }: {
       planId: string
       data: { label: string; group_key?: string; required_count?: number }
-    }) => apiClient.post<ChecklistItem>(`/plans/${planId}/checklist`, data),
+    }) => {
+      const response = await apiClient.post<{data: ChecklistItem}>(`/plans/${planId}/checklist`, data)
+      return response.data
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['checklist-items', variables.planId] })
     },
@@ -130,8 +160,10 @@ export function useUpdateChecklistItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ planId, itemId, data }: { planId: string; itemId: string; data: Partial<ChecklistItem> }) =>
-      apiClient.patch<ChecklistItem>(`/plans/${planId}/checklist/${itemId}`, data),
+    mutationFn: async ({ planId, itemId, data }: { planId: string; itemId: string; data: Partial<ChecklistItem> }) => {
+      const response = await apiClient.patch<{data: ChecklistItem}>(`/plans/${planId}/checklist/${itemId}`, data)
+      return response.data
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['checklist-items', variables.planId] })
     },
@@ -153,7 +185,10 @@ export function useDeleteChecklistItem() {
 export function useExportPlan(planId: string) {
   return useQuery({
     queryKey: ['plan-export', planId],
-    queryFn: () => apiClient.get<PlanExport>(`/plans/${planId}/export`),
+    queryFn: async () => {
+      const response = await apiClient.get<{data: PlanExport}>(`/plans/${planId}/export`)
+      return response.data
+    },
     enabled: false, // Only run manually
   })
 }
@@ -162,7 +197,10 @@ export function useImportPlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: PlanExport) => apiClient.post<Plan>('/plans/import', data),
+    mutationFn: async (data: PlanExport) => {
+      const response = await apiClient.post<{data: Plan}>('/plans/import', data)
+      return response.data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] })
     },
@@ -171,8 +209,10 @@ export function useImportPlan() {
 
 export function useParseChecklist() {
   return useMutation({
-    mutationFn: ({ planId, text }: { planId: string; text: string }) =>
-      apiClient.post<ChecklistItem[]>(`/plans/${planId}/checklist/parse-text`, { text }),
+    mutationFn: async ({ planId, text }: { planId: string; text: string }) => {
+      const response = await apiClient.post<{data: ChecklistItem[]}>(`/plans/${planId}/checklist/parse-text`, { text })
+      return response.data
+    },
   })
 }
 

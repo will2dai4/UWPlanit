@@ -21,7 +21,7 @@ const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string(),
   
   // UW API
-  UW_API_BASE: z.string().url().default('https://api.uwaterloo.ca/v3'),
+  UW_API_BASE: z.string().url().default('https://openapi.data.uwaterloo.ca/v3'),
   UW_API_KEY: z.string().optional(),
   
   // CORS

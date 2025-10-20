@@ -1,5 +1,5 @@
 import { db } from '../config/database';
-import { Course, CourseRelation, CytoscapeElements } from '../types';
+import { Course, CourseRelation, GraphElements } from '../types';
 import { buildGraphElements } from '../utils/graph-builder';
 import { logger } from '../config/logger';
 
@@ -102,7 +102,7 @@ export class CourseService {
   /**
    * Get global graph (all courses and relations)
    */
-  async getGlobalGraph(): Promise<CytoscapeElements> {
+  async getGlobalGraph(): Promise<GraphElements> {
     logger.info('Building global graph from database');
 
     // Get all courses
@@ -120,7 +120,7 @@ export class CourseService {
   /**
    * Get subject-specific graph
    */
-  async getSubjectGraph(subject: string): Promise<CytoscapeElements> {
+  async getSubjectGraph(subject: string): Promise<GraphElements> {
     const upperSubject = subject.toUpperCase();
 
     logger.info({ subject: upperSubject }, 'Building subject graph from database');
