@@ -1,209 +1,171 @@
 # UWPlanit - Course Planning Platform
 
-UWPlanit is a comprehensive course planning and visualization platform designed specifically for University of Washington students. This repository contains both the frontend and backend components of the application.
+UWPlanit is a comprehensive course planning and visualization platform designed specifically for University of Washington students. This repository contains three different versions of the application to suit different deployment and development needs.
 
 ## 🏗️ Repository Structure
 
-This repository has been split into two main components:
+This repository has been organized into three main components:
 
 ```
 UWPlanit/
-├── frontend/          # React/Next.js UI application
-├── backend/           # API server and data processing
-├── frontend/          # Original full-stack application (preserved)
+├── frontend/          # React/Next.js UI application (standalone)
+├── backend/           # API server and data processing (standalone)
+├── original/          # Complete full-stack application (monolithic)
 └── README.md         # This file
 ```
 
 ### 📱 Frontend (`/frontend`)
-- **Technology**: Next.js 14, React 18, TypeScript
-- **Purpose**: User interface, course visualization, planning tools
-- **Features**: Course search, interactive graphs, drag-and-drop planning
+- **Technology**: Next.js 14, React 18, TypeScript, Tailwind CSS
+- **Purpose**: Standalone UI application for course planning and visualization
+- **Features**: Course search, interactive graphs, drag-and-drop planning, user authentication
 - **Port**: Runs on `http://localhost:3000`
+- **Dependencies**: UI-focused (React, Tailwind, D3.js, Auth0 client)
+- **Status**: ✅ Builds and runs independently
 
 ### 🔧 Backend (`/backend`)
-- **Technology**: Next.js API Routes, tRPC, Supabase
-- **Purpose**: Data processing, API endpoints, database operations
-- **Features**: Course data management, user authentication, data scraping
-- **Port**: Runs on `http://localhost:3000` (API routes)
+- **Technology**: Next.js API Routes, tRPC, Supabase, TypeScript
+- **Purpose**: Standalone API server for data processing and database operations
+- **Features**: Course data management, user authentication, database operations, API endpoints
+- **Port**: Runs on `http://localhost:3001` (configurable)
+- **Dependencies**: Server-focused (tRPC, Supabase, Auth0 server)
+- **Status**: ✅ Builds and runs independently
 
-### 🏠 Original Application (Root)
-- **Technology**: Full-stack Next.js application
-- **Purpose**: Complete integrated application
-- **Features**: All frontend and backend functionality in one codebase
+### 🏠 Original (`/original`)
+- **Technology**: Complete Next.js full-stack application
+- **Purpose**: Monolithic application with both frontend and backend in one codebase
+- **Features**: All features combined in a single application
+- **Port**: Runs on `http://localhost:3000`
+- **Dependencies**: Full-stack dependencies
+- **Status**: ✅ Complete working application
 
 ## 🚀 Quick Start
 
-### Option 1: Run Split Applications
-
-1. **Start the Backend**:
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-
-2. **Start the Frontend** (in a new terminal):
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-### Option 2: Run Original Application
-
+### Option 1: Use the Original Monolithic App
 ```bash
+cd original
 npm install
 npm run dev
 ```
 
-## 🔧 Development Setup
+### Option 2: Use Split Frontend + Backend
+```bash
+# Terminal 1 - Start Backend
+cd backend
+npm install
+npm run dev
 
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Supabase account
-- Auth0 account
-
-### Environment Variables
-
-Each application needs its own environment configuration:
-
-#### Frontend (`.env.local`)
-```env
-# Auth0 Configuration
-AUTH0_SECRET=your-auth0-secret
-AUTH0_BASE_URL=http://localhost:3000
-AUTH0_ISSUER_BASE_URL=https://your-domain.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_CLIENT_SECRET=your-client-secret
-
-# Backend API URL
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-```
-
-#### Backend (`.env.local`)
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-
-# Auth0 Configuration
-AUTH0_SECRET=your-auth0-secret
-AUTH0_BASE_URL=http://localhost:3000
-AUTH0_ISSUER_BASE_URL=https://your-domain.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_CLIENT_SECRET=your-client-secret
+# Terminal 2 - Start Frontend
+cd frontend
+npm install
+npm run dev
 ```
 
 ## 📋 Features
 
-### Course Management
-- **Search & Discovery**: Advanced filtering by department, keywords, requirements
-- **Course Details**: Comprehensive course information and descriptions
-- **Prerequisites**: Visual representation of course dependencies
+- **Course Search & Discovery**: Search and filter courses by department, keywords, and requirements
+- **Interactive Course Graph**: Visualize course prerequisites and relationships using D3.js
+- **Course Planning**: Plan your academic journey with drag-and-drop course scheduling
+- **User Authentication**: Secure login with Auth0 integration
+- **Responsive Design**: Mobile-first design with modern UI components
+- **Real-time Updates**: Live data synchronization across all components
 
-### Planning Tools
-- **Interactive Graph**: D3.js visualization of course relationships
-- **Drag & Drop Planner**: Intuitive course scheduling interface
-- **Academic Planning**: Multi-year course planning support
+## 🛠️ Development
 
-### User Experience
-- **Authentication**: Secure login with Auth0
-- **Responsive Design**: Mobile-first approach with modern UI
-- **Real-time Updates**: Live data synchronization
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (for database)
+- Auth0 account (for authentication)
 
-## 🛠️ Technology Stack
+### Environment Setup
+Each folder (`frontend`, `backend`, `original`) has its own `.env.example` file. Copy and configure:
+```bash
+cp .env.example .env.local
+```
 
-### Frontend
-- **Framework**: Next.js 14 with App Router
-- **UI**: React 18, TypeScript, Tailwind CSS
-- **State**: Zustand, TanStack Query
-- **Visualization**: D3.js, Force Graph
-- **Components**: Radix UI primitives
-
-### Backend
-- **API**: Next.js API Routes, tRPC
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Auth0
-- **Validation**: Zod schemas
-- **Processing**: Custom data scraping scripts
+### Database Setup
+The Supabase migrations are located in the `supabase/migrations` folder. Run migrations to set up the database schema.
 
 ## 📁 Project Architecture
 
-### Data Flow
-```
-Frontend (React) ←→ Backend API (tRPC) ←→ Database (Supabase)
-     ↓                    ↓                    ↓
-User Interface    Data Processing    Course Data Storage
-```
+### Frontend Architecture
+- **Pages**: Next.js App Router with server-side rendering
+- **Components**: Reusable UI components with Tailwind CSS
+- **State Management**: Zustand for global state
+- **Data Fetching**: TanStack Query for server state
+- **Authentication**: Auth0 Next.js SDK
 
-### Key Components
-- **Course Search**: Advanced filtering and search capabilities
-- **Course Graph**: Interactive visualization of prerequisites
-- **Course Planner**: Drag-and-drop scheduling interface
-- **User Management**: Authentication and profile management
-- **Data Pipeline**: Course scraping and database seeding
+### Backend Architecture
+- **API Routes**: Next.js API routes for REST endpoints
+- **tRPC**: Type-safe API layer for frontend communication
+- **Database**: Supabase (PostgreSQL) with type-safe queries
+- **Authentication**: Auth0 server-side verification
+- **Data Processing**: Course scraping and relationship mapping
+
+### Original Architecture
+- **Monolithic**: Combined frontend and backend in single Next.js app
+- **Full-Stack**: Server-side rendering with API routes
+- **Integrated**: All features working together seamlessly
+
+## 🔧 Configuration
+
+### Frontend Configuration
+- Configure API endpoints to point to backend server
+- Set up Auth0 client configuration
+- Configure Supabase client for direct database access
+
+### Backend Configuration
+- Set up Supabase admin client for database operations
+- Configure Auth0 server-side verification
+- Set up API rate limiting and security
+
+### Original Configuration
+- Configure all services in single environment
+- Set up integrated Auth0 and Supabase configuration
+
+## 📊 Database Schema
+
+The application uses Supabase (PostgreSQL) with the following main tables:
+- `courses`: Course information and metadata
+- `auth.users`: User profiles and authentication data
+- Course relationships and prerequisites are stored as JSON arrays
 
 ## 🚀 Deployment
 
 ### Frontend Deployment
-- **Vercel**: Recommended for Next.js applications
-- **Netlify**: Alternative static site hosting
-- **AWS Amplify**: Cloud-based deployment
+- Deploy to Vercel, Netlify, or any static hosting
+- Configure environment variables for API endpoints
+- Set up Auth0 client configuration
 
 ### Backend Deployment
-- **Vercel**: Serverless API functions
-- **Railway**: Full-stack deployment platform
-- **AWS Lambda**: Serverless backend services
+- Deploy to Vercel, Railway, or any Node.js hosting
+- Configure Supabase and Auth0 server settings
+- Set up database connections and migrations
 
-### Database
-- **Supabase**: Managed PostgreSQL with real-time features
-- **Auth0**: Managed authentication service
+### Original Deployment
+- Deploy as single Next.js application
+- Configure all services in production environment
+- Set up database and authentication
 
 ## 🤝 Contributing
 
-1. **Choose your development approach**:
-   - Work on the split applications for modular development
-   - Work on the original application for integrated development
+1. Choose the appropriate folder for your changes:
+   - `frontend/` for UI-only changes
+   - `backend/` for API-only changes  
+   - `original/` for full-stack changes
 
-2. **Follow the coding standards**:
-   - Use TypeScript for all new code
-   - Follow Next.js best practices
-   - Implement proper error handling
-   - Write accessible components
-
-3. **Testing**:
-   - Test both frontend and backend functionality
-   - Verify API endpoints work correctly
-   - Check responsive design across devices
-
-## 📚 Documentation
-
-- [Frontend Documentation](./frontend/README.md)
-- [Backend Documentation](./backend/README.md)
-- [API Documentation](./backend/README.md#api-endpoints)
-
-## 🔒 Security
-
-- **Authentication**: Auth0 integration for secure user management
-- **Data Protection**: Supabase RLS (Row Level Security)
-- **API Security**: Protected routes and input validation
-- **Environment Variables**: Secure configuration management
+2. Follow the existing code structure and patterns
+3. Ensure all applications build successfully
+4. Test your changes in the appropriate environment
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🆘 Support
 
 For questions or issues:
-1. Check the individual README files in `/frontend` and `/backend`
-2. Review the API documentation
-3. Check existing issues in the repository
-4. Create a new issue with detailed information
-
----
-
-**Note**: This repository contains both the original full-stack application and the newly split frontend/backend applications. Choose the approach that best fits your development needs.
+1. Check the README files in each folder for specific setup instructions
+2. Review the environment configuration examples
+3. Ensure all dependencies are properly installed
+4. Verify database and authentication services are configured correctly
