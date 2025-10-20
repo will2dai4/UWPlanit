@@ -10,7 +10,6 @@ import { motion } from "framer-motion";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
-import { GetProButton } from "@/components/get-pro-button";
 
 const CourseSearch = dynamic(
   () => import("@/components/course-search").then((m) => m.CourseSearch),
@@ -105,7 +104,6 @@ export default function GraphPage() {
               About
             </Button>
             {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
-            <GetProButton />
           </nav>
         </div>
       </header>

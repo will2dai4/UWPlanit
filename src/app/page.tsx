@@ -14,7 +14,6 @@ import { motion } from "framer-motion";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
-import { GetProButton } from "@/components/get-pro-button";
 
 // Heavy, purely-client components are code-split for faster first paint.
 const CourseSearch = dynamic(
@@ -150,7 +149,6 @@ export default function Home() {
             <Button variant="ghost" size="sm" onClick={() => router.push("/planner")}>Planner</Button>
             <Button variant="ghost" size="sm">About</Button>
             {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
-            <GetProButton />
           </nav>
         </div>
       </header>
@@ -183,7 +181,7 @@ export default function Home() {
             <CourseSearch
               courses={courses}
               onSelect={handleSelectCourse}
-              onFiltersChange={setFilters}
+              onFiltersChange={(departments) => setFilters(prev => ({ ...prev, departments }))}
             />
           </div>
 
@@ -200,16 +198,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Premium Upgrade CTA */}
-          <div className="border-t p-6">
-            <div className="rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4">
-              <h3 className="font-semibold text-slate-900 mb-2">Unlock Premium Features</h3>
-              <p className="text-sm text-slate-600 mb-3">
-                Advanced planning, PDF exports, and prerequisite validation
-              </p>
-              <GetProButton className="w-full" />
-            </div>
-          </div>
         </motion.aside>
 
         {/* Main Graph Area */}

@@ -8,6 +8,6 @@ const PlannerClient = dynamicImport(() => import("./planner-client").then((m) =>
 });
 
 export default function PlannerPage() {
-  // No auth / pro gating for now – public access.
+  // Public access for all users.
   return <PlannerClient />;
 } 

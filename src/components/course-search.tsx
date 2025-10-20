@@ -75,10 +75,8 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
         !codeSet.has(c.id) &&
         (c.description || "").toLowerCase().includes(term)
     );
-    const descSet = new Set(descMatches.map((c) => c.id));
 
     // 3️⃣ Fuzzy fallback on remaining courses (code + name)
-    const remaining = courses.filter((c) => !codeSet.has(c.id) && !descSet.has(c.id));
     const fuzzyResults = term.length >= 3 ? fuse.search(term, { limit: LIMITED_RESULTS }).map((r) => r.item) : [];
 
     return [...codeMatches, ...descMatches, ...fuzzyResults];

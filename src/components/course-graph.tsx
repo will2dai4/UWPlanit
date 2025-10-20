@@ -181,7 +181,6 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
 
           // Use the fixed department order so indices – and thus radii – remain
           // consistent regardless of which departments are currently selected.
-          const deptIndex = DEPARTMENT_ORDER.indexOf(dept);
           // If a department isn't in the predefined list, push it to the end
           // in alphabetical order but *do not* affect existing ones. This keeps
           // radii for known departments stable.

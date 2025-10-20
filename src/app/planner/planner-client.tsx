@@ -4,8 +4,6 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { Course, CourseData } from "@/types/course";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import { motion } from "framer-motion";
 import { AccountMenu } from "@/components/account-menu";
 import { useRouter } from "next/navigation";
 
@@ -28,7 +26,7 @@ const CoursePlan = dynamic(
 );
 
 /**
- * PlannerClient — interactive planner page shown only to Pro users.
+ * PlannerClient — interactive planner page for all users.
  * – Search for courses
  * – Click or search-select to add to personal plan
  * – Visual graph context identical to /graph for familiarity

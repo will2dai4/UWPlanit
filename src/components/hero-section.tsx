@@ -8,7 +8,6 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
 import Image from "next/image";
-import { GetProButton } from "@/components/get-pro-button";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -57,7 +56,6 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             About
           </Button>
           {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
-          <GetProButton className="shadow-lg" />
         </motion.div>
       </nav>
 

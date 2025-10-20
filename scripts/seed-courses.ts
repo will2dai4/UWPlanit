@@ -3,12 +3,12 @@ config({ path: '.env.local' })
 import path from "path";
 import fs from "fs/promises";
 import { supabaseAdmin } from "../src/lib/supabase";
-import type { CourseRow } from "../src/lib/supabase";
+import type { Tables } from "../src/lib/supabase.types";
 
 async function main() {
   const filePath = path.join(process.cwd(), "src", "data", "courses.json");
   const raw = await fs.readFile(filePath, "utf8");
-  const { courses } = JSON.parse(raw) as { courses: CourseRow[] };
+  const { courses } = JSON.parse(raw) as { courses: Tables<"courses">[] };
 
   console.log(`🏗  Seeding ${courses.length} courses to Supabase …`);
 
