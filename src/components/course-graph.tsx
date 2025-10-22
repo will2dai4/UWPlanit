@@ -3,7 +3,8 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, RotateCcw, Filter, Maximize2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ZoomIn, ZoomOut, RotateCcw, Filter, Maximize2, CheckSquare, Trash2, X } from "lucide-react";
 import { Group } from "@visx/group";
 import { scaleOrdinal } from "@visx/scale";
 import { motion } from "framer-motion";
@@ -13,11 +14,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ContextMenu, ContextMenuItem } from "@/components/ui/context-menu";
 
 interface CourseGraphProps {
   courses: Course[];
   selectedCourse: Course | null;
   onSelectCourse: (course: Course | null) => void;
+  selectedNodeIds?: string[];
+  selectionMode?: boolean;
+  onToggleNodeSelection?: (nodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onToggleSelectionMode?: () => void;
+  onBulkDelete?: () => void;
+  onClearSelection?: () => void;
 }
 
 interface Node {
@@ -90,7 +99,18 @@ const colorScale = scaleOrdinal({
 // Normalise course ids / codes so "CS136" and "CS 136" match
 const normalizeId = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 
-export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseGraphProps) {
+export function CourseGraph({ 
+  courses, 
+  selectedCourse, 
+  onSelectCourse,
+  selectedNodeIds = [],
+  selectionMode = false,
+  onToggleNodeSelection,
+  onDeleteNode,
+  onToggleSelectionMode,
+  onBulkDelete,
+  onClearSelection,
+}: CourseGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [zoom, setZoom] = useState(1);
@@ -107,6 +127,12 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
     new Map()
   );
   const nodePositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    nodeId: string | null;
+  }>({ visible: false, x: 0, y: 0, nodeId: null });
 
   // Refs for high-performance dragging
   const draggedNodeRef = useRef<string | null>(null);
@@ -387,15 +413,24 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
       e.stopPropagation();
       // If the node has been moved during this interaction, treat as drag not click
       if (hasMovedRef.current) return;
-      onSelectCourse(node.course);
+      
+      // In selection mode, toggle selection instead of opening drawer
+      if (selectionMode) {
+        onToggleNodeSelection?.(node.id);
+      } else {
+        onSelectCourse(node.course);
+      }
     },
-    [onSelectCourse]
+    [onSelectCourse, selectionMode, onToggleNodeSelection]
   );
 
   // High-performance node dragging with direct DOM manipulation
   const handleNodeMouseDown = useCallback(
     (node: Node, e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent canvas panning
+
+      // Disable dragging in selection mode
+      if (selectionMode) return;
 
       if (!svgRef.current) return;
 
@@ -424,7 +459,7 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
       // Initialize temp position with current position
       tempPositionsRef.current.set(node.id, { x: currentPos.x, y: currentPos.y });
     },
-    [zoom, pan]
+    [zoom, pan, selectionMode]
   );
 
   // Direct DOM manipulation for dragging (bypasses React state)
@@ -547,6 +582,7 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
     tempPositionsRef.current.clear();
     document.body.style.cursor = "";
     hasMovedRef.current = false;
+    onClearSelection?.(); // Clear selection on reset
   };
 
   // Wheel zoom functionality with zoom-to-cursor
@@ -701,6 +737,28 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
     return colorScale(node.course.department) || "#64748b";
   };
 
+  const handleNodeContextMenu = useCallback((node: Node, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      nodeId: node.id,
+    });
+  }, []);
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClick = () => {
+      if (contextMenu.visible) {
+        setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
+      }
+    };
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, [contextMenu.visible]);
+
   return (
     <div
       className={`relative h-full w-full bg-gradient-to-br from-slate-50 to-blue-50 ${isFullscreen ? "fixed inset-0 z-50" : ""}`}
@@ -821,19 +879,20 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
                     nodeElementsRef.current.delete(node.id);
                   }
                 }}
-                style={{ cursor: draggedNodeRef.current === node.id ? "grabbing" : "grab" }}
+                style={{ cursor: selectionMode ? "pointer" : (draggedNodeRef.current === node.id ? "grabbing" : "grab") }}
                 onClick={(e) => handleNodeClick(node, e)}
                 onMouseDown={(e) => handleNodeMouseDown(node, e)}
                 onPointerDown={(e) => e.stopPropagation()}
+                onContextMenu={(e) => handleNodeContextMenu(node, e)}
               >
                 <circle
                   cx={currentPos.x}
                   cy={currentPos.y}
                   r={node.course.id === selectedCourse?.id ? 12 : 9}
                   fill={getNodeColor(node)}
-                  stroke="#fff"
-                  strokeWidth={2}
-                  className="transition-colors duration-200"
+                  stroke={selectedNodeIds.includes(node.id) ? "#8b5cf6" : "#fff"}
+                  strokeWidth={selectedNodeIds.includes(node.id) ? 4 : 2}
+                  className="transition-all duration-200"
                 />
                 {/* Course code - visible when moderately zoomed in */}
                 {zoom > 0.7 && (
@@ -871,6 +930,27 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
           })}
         </Group>
       </motion.svg>
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu({ visible: false, x: 0, y: 0, nodeId: null })}
+        >
+          <ContextMenuItem
+            onClick={() => {
+              if (contextMenu.nodeId) {
+                onDeleteNode?.(contextMenu.nodeId);
+              }
+              setContextMenu({ visible: false, x: 0, y: 0, nodeId: null });
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Course
+          </ContextMenuItem>
+        </ContextMenu>
+      )}
 
       {/* Modern Controls */}
       <div className="absolute bottom-6 left-6 flex items-center space-x-4">
@@ -916,6 +996,15 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
           >
             <Maximize2 className="h-4 w-4" />
           </Button>
+          <Button
+            variant={selectionMode ? "default" : "ghost"}
+            size="icon"
+            onClick={onToggleSelectionMode}
+            title="Selection Mode"
+            aria-label="Selection Mode"
+          >
+            <CheckSquare className="h-4 w-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -946,6 +1035,39 @@ export function CourseGraph({ courses, selectedCourse, onSelectCourse }: CourseG
             </DropdownMenuContent>
           </DropdownMenu>
         </motion.div>
+
+        {/* Selection Controls */}
+        {selectedNodeIds.length > 0 && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="flex items-center space-x-2 rounded-xl bg-white/90 backdrop-blur-sm p-3 shadow-lg border border-white/20"
+          >
+            <Badge variant="secondary" className="font-medium">
+              {selectedNodeIds.length} selected
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBulkDelete}
+              title="Delete Selected"
+              aria-label="Delete Selected Courses"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClearSelection}
+              title="Clear Selection"
+              aria-label="Clear Selection"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ y: 20, opacity: 0 }}

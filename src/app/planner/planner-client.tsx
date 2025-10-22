@@ -38,6 +38,8 @@ export function PlannerClient() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   // sidebarOpen state removed
 
   /* ------------------------------------------------------------
@@ -65,6 +67,38 @@ export function PlannerClient() {
   const handleSelectCourse = (course: Course | null) => {
     // Selecting a node should only focus the drawer, not auto-add to plan.
     startTransition(() => setSelectedCourse(course));
+  };
+
+  const handleToggleNodeSelection = (nodeId: string) => {
+    setSelectedNodeIds((prev) => {
+      if (prev.includes(nodeId)) {
+        return prev.filter((id) => id !== nodeId);
+      }
+      return [...prev, nodeId];
+    });
+  };
+
+  const handleDeleteNode = (nodeId: string) => {
+    setPlannedCourses((prev) => prev.filter((c) => c.id !== nodeId));
+    // Also remove from selection if it was selected
+    setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
+  };
+
+  const handleBulkDelete = () => {
+    setPlannedCourses((prev) => prev.filter((c) => !selectedNodeIds.includes(c.id)));
+    setSelectedNodeIds([]);
+  };
+
+  const handleToggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    // Clear selection when toggling off
+    if (selectionMode) {
+      setSelectedNodeIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedNodeIds([]);
   };
 
   /* ------------------------------------------------------------
@@ -102,9 +136,9 @@ export function PlannerClient() {
       </header>
 
       {/* Main layout: graph left, planner sidebar right */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Graph */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden">
           <CourseGraph
             courses={graphCourses}
             selectedCourse={selectedCourse}
@@ -112,6 +146,13 @@ export function PlannerClient() {
               if (c) handleAddCourse(c);
               handleSelectCourse(c);
             }}
+            selectedNodeIds={selectedNodeIds}
+            selectionMode={selectionMode}
+            onToggleNodeSelection={handleToggleNodeSelection}
+            onDeleteNode={handleDeleteNode}
+            onToggleSelectionMode={handleToggleSelectionMode}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
