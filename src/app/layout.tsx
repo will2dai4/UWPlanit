@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { getSession } from "@auth0/nextjs-auth0";
+import { getServerSession } from "@/lib/auth-server";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,12 +29,7 @@ export default async function RootLayout({
   // round-trip to `/api/auth/me` and prevents a noticeable flash before the
   // account avatar or login button appears.
   // If Auth0 is not configured (missing env vars), gracefully handle and run without auth.
-  let session = null;
-  try {
-    session = await getSession();
-  } catch (error) {
-    console.warn("Auth0 not configured. Running without authentication:", error);
-  }
+  const session = await getServerSession();
 
   return (
     <html lang="en">

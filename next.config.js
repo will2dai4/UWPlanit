@@ -17,7 +17,21 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    domains: ["localhost", "lh3.googleusercontent.com", "s.gravatar.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "s.gravatar.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "3000",
+      },
+    ],
   },
   experimental: {
     // serverActions are now enabled by default in Next.js 14+

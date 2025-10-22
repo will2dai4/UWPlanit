@@ -19,7 +19,7 @@ const CourseSchema = z.object({
   subjectCode: z.string(),
   catalogNumber: z.string(),
   title: z.string(),
-  description: z.string(),
+  description: z.string().nullable(),
   requirementsDescription: z.string().nullable(),
 });
 
