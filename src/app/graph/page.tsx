@@ -3,6 +3,7 @@
 import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import type { Course, CourseData } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -90,7 +91,7 @@ export default function GraphPage() {
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
             <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600" />
+              <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 UW Course Graph
               </h1>

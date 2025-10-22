@@ -33,9 +33,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg overflow-hidden">
-            <Image src="/uw_planit_logo_white_transparent.svg" alt="icon" width={20} height={20} className="h-5 w-5 object-contain" />
-          </div>
+          <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={40} height={40} className="h-10 w-10" />
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             UW Course Graph
           </span>
