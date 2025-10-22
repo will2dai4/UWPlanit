@@ -4,6 +4,7 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -97,19 +98,22 @@ export default function GraphPage() {
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <div className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
               <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                UW Course Graph
+                UWPlanit
               </h1>
-            </div>
+            </Link>
           </div>
           <nav className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-              Home
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/">Home</Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => router.push("/about")}>
-              About
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/graph">Graph</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/planner">Planner</Link>
             </Button>
             {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
           </nav>

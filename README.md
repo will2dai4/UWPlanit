@@ -1,4 +1,4 @@
-# UW Course Graph & Planner
+# UWPlanit
 
 A modern web application for University of Waterloo students to visualize course dependencies and plan their academic journey.
 
