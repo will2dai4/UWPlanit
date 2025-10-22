@@ -2,6 +2,7 @@
 
 import { useState, useEffect, startTransition, useMemo } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
@@ -38,6 +39,8 @@ export function PlannerClient() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   // sidebarOpen state removed
 
   /* ------------------------------------------------------------
@@ -67,6 +70,38 @@ export function PlannerClient() {
     startTransition(() => setSelectedCourse(course));
   };
 
+  const handleToggleNodeSelection = (nodeId: string) => {
+    setSelectedNodeIds((prev) => {
+      if (prev.includes(nodeId)) {
+        return prev.filter((id) => id !== nodeId);
+      }
+      return [...prev, nodeId];
+    });
+  };
+
+  const handleDeleteNode = (nodeId: string) => {
+    setPlannedCourses((prev) => prev.filter((c) => c.id !== nodeId));
+    // Also remove from selection if it was selected
+    setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
+  };
+
+  const handleBulkDelete = () => {
+    setPlannedCourses((prev) => prev.filter((c) => !selectedNodeIds.includes(c.id)));
+    setSelectedNodeIds([]);
+  };
+
+  const handleToggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    // Clear selection when toggling off
+    if (selectionMode) {
+      setSelectedNodeIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedNodeIds([]);
+  };
+
   /* ------------------------------------------------------------
    *  Graph subset: only planned courses (always include selected for context).
    * ---------------------------------------------------------- */
@@ -90,9 +125,12 @@ export function PlannerClient() {
       {/* Top nav – removed sidebar toggle */}
       <header className="border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Course Planner
-          </h1>
+          <div className="flex items-center space-x-3">
+            <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Course Planner
+            </h1>
+          </div>
           <nav className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" onClick={() => router.push("/")}>Home</Button>
             <Button variant="ghost" size="sm" onClick={() => router.push("/graph")}>Graph</Button>
@@ -102,9 +140,9 @@ export function PlannerClient() {
       </header>
 
       {/* Main layout: graph left, planner sidebar right */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Graph */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden">
           <CourseGraph
             courses={graphCourses}
             selectedCourse={selectedCourse}
@@ -112,6 +150,13 @@ export function PlannerClient() {
               if (c) handleAddCourse(c);
               handleSelectCourse(c);
             }}
+            selectedNodeIds={selectedNodeIds}
+            selectionMode={selectionMode}
+            onToggleNodeSelection={handleToggleNodeSelection}
+            onDeleteNode={handleDeleteNode}
+            onToggleSelectionMode={handleToggleSelectionMode}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
