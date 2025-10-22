@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession, updateSession } from "@auth0/nextjs-auth0";
-import qs from "querystring";
-
-interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
+import { getSession } from "@auth0/nextjs-auth0";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -16,67 +11,34 @@ export async function POST(req: Request) {
 
     const { name, program, term } = await req.json();
 
-    // Fetch Management API token
-    const tokenRes = await fetch(`${process.env.AUTH0_ISSUER_BASE_URL}/oauth/token`, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: qs.stringify({
-        grant_type: "client_credentials",
-        client_id: process.env.AUTH0_MGMT_CLIENT_ID,
-        client_secret: process.env.AUTH0_MGMT_CLIENT_SECRET,
-        audience: `${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/`,
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      const txt = await tokenRes.text();
-      console.error("Failed to obtain management token", txt);
-      return NextResponse.json({ error: "token_fail" }, { status: 500 });
-    }
-
-    const { access_token } = (await tokenRes.json()) as TokenResponse;
-
-    // Patch user metadata
-    const patchRes = await fetch(
-      `${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/users/${encodeURIComponent(session.user.sub)}`,
-      {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${access_token}`,
+    // Save to Supabase (this is now the source of truth for user profile data)
+    const { data, error } = await supabaseAdmin
+      .from("users")
+      .upsert(
+        {
+          id: session.user.sub,
+          email: session.user.email ?? "",
+          name,
+          program,
+          current_term: term,
+          avatar_url: session.user.picture,
+          updated_at: new Date().toISOString(),
         },
-        body: JSON.stringify({
-          user_metadata: { name, program, term },
-        }),
-      }
-    );
+        {
+          onConflict: "id",
+        }
+      )
+      .select()
+      .single();
 
-    if (!patchRes.ok) {
-      const txt = await patchRes.text();
-      console.error("Failed to update user", txt);
-      return NextResponse.json({ error: "update_fail" }, { status: 500 });
+    if (error) {
+      console.error("Failed to update user profile in Supabase:", error);
+      return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 
-    // update local session so onboarding gate passes immediately
-    const newSession = {
-      ...session,
-      user: {
-        ...session.user,
-        user_metadata: { name, program, term },
-      },
-    } as any;
-    // Persist updated session cookies so the client reflects changes immediately
-    // Create a real NextResponse instance so Auth0 helper can attach cookies.
-    const res = NextResponse.json({ success: true });
-    // `updateSession` mutates the provided response by setting the new cookie header.
-    // We intentionally cast to `any` because `updateSession` currently expects
-    // `NextRequest` / `NextResponse` from the edge helpers, but those are compatible
-    // with the standard Web types used in the App Router.
-    await updateSession(req as any, res, newSession);
-
-    return res;
+    return NextResponse.json({ success: true, data });
   } catch (err) {
-    console.error(err);
+    console.error("Profile update error:", err);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

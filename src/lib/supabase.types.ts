@@ -84,6 +84,140 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          program: string | null
+          current_term: string | null
+          avatar_url: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          email: string
+          name?: string | null
+          program?: string | null
+          current_term?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string | null
+          program?: string | null
+          current_term?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      course_plans: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          is_active: boolean | null
+          start_term: string | null
+          start_year: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          is_active?: boolean | null
+          start_term?: string | null
+          start_year?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          is_active?: boolean | null
+          start_term?: string | null
+          start_year?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      plan_courses: {
+        Row: {
+          id: string
+          plan_id: string
+          course_id: string
+          term: string
+          year: number | null
+          term_order: number | null
+          notes: string | null
+          is_completed: boolean | null
+          grade: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          course_id: string
+          term: string
+          year?: number | null
+          term_order?: number | null
+          notes?: string | null
+          is_completed?: boolean | null
+          grade?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          course_id?: string
+          term?: string
+          year?: number | null
+          term_order?: number | null
+          notes?: string | null
+          is_completed?: boolean | null
+          grade?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_courses_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "course_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -98,40 +232,6 @@ export type Database = {
       [_ in never]: never
     }
   }
-  auth: {
-    Tables: {
-      users: {
-        Row: {
-          id: string;
-          email: string | null;
-          marketing_opt_in: boolean | null;
-        };
-        Insert: {
-          id: string;
-          email?: string | null;
-          marketing_opt_in?: boolean | null;
-        };
-        Update: {
-          id?: string;
-          email?: string | null;
-          marketing_opt_in?: boolean | null;
-        };
-        Relationships: [];
-      };
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
