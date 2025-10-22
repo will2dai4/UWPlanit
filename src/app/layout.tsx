@@ -11,9 +11,9 @@ export const metadata: Metadata = {
   description:
     "Visualize course dependencies and plan your academic journey at the University of Waterloo.",
   icons: {
-    icon: "/uw_planit_logo_blue_transparent.svg",
-    shortcut: "/uw_planit_logo_blue_transparent.svg",
-    apple: "/uw_planit_logo_blue_transparent.svg",
+    icon: "/assets/uwplanit-grayscale-logo.svg",
+    shortcut: "/assets/uwplanit-grayscale-logo.svg",
+    apple: "/assets/uwplanit-grayscale-logo.svg",
   },
 };
 
