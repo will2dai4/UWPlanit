@@ -27,6 +27,8 @@ interface CourseGraphProps {
   onToggleSelectionMode?: () => void;
   onBulkDelete?: () => void;
   onClearSelection?: () => void;
+  initialNodePositions?: Map<string, { x: number; y: number }>;
+  onNodePositionChange?: (courseId: string, x: number, y: number) => void;
 }
 
 interface Node {
@@ -110,6 +112,8 @@ export function CourseGraph({
   onToggleSelectionMode,
   onBulkDelete,
   onClearSelection,
+  initialNodePositions,
+  onNodePositionChange,
 }: CourseGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -124,9 +128,19 @@ export function CourseGraph({
   );
   const [viewport, setViewport] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(
-    new Map()
+    initialNodePositions || new Map()
   );
-  const nodePositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const nodePositionsRef = useRef<Map<string, { x: number; y: number }>>(
+    initialNodePositions || new Map()
+  );
+
+  // Sync with external initial positions when they change
+  useEffect(() => {
+    if (initialNodePositions && initialNodePositions.size > 0) {
+      setNodePositions(new Map(initialNodePositions));
+      nodePositionsRef.current = new Map(initialNodePositions);
+    }
+  }, [initialNodePositions]);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -533,8 +547,10 @@ export function CourseGraph({
   const handleNodeMouseUp = useCallback(() => {
     if (!draggedNodeRef.current) return;
 
+    const draggedNodeId = draggedNodeRef.current;
+
     // Restore transitions for the dragged node
-    const nodeElement = nodeElementsRef.current.get(draggedNodeRef.current);
+    const nodeElement = nodeElementsRef.current.get(draggedNodeId);
     if (nodeElement) {
       const circle = nodeElement.querySelector("circle");
       const texts = nodeElement.querySelectorAll("text");
@@ -548,17 +564,22 @@ export function CourseGraph({
     }
 
     // Commit temp position to React state (single update)
-    const tempPos = tempPositionsRef.current.get(draggedNodeRef.current);
+    const tempPos = tempPositionsRef.current.get(draggedNodeId);
     if (tempPos) {
       // Create updated map once so we can synchronously update both state & ref
       const updatedMap = new Map(nodePositionsRef.current);
-      updatedMap.set(draggedNodeRef.current!, tempPos);
+      updatedMap.set(draggedNodeId, tempPos);
 
       // Update ref immediately so subsequent interactions have fresh data
       nodePositionsRef.current = updatedMap;
 
       // Trigger React re-render
       setNodePositions(updatedMap);
+
+      // Emit position change to parent component
+      if (onNodePositionChange) {
+        onNodePositionChange(draggedNodeId, tempPos.x, tempPos.y);
+      }
     }
 
     // Clean up
@@ -570,7 +591,7 @@ export function CourseGraph({
     setTimeout(() => {
       hasMovedRef.current = false;
     }, 0);
-  }, []);
+  }, [onNodePositionChange]);
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev * 1.2, 5));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev / 1.2, 0.1));

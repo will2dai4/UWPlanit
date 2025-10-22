@@ -256,6 +256,8 @@ export const planRouter = createTRPCRouter({
         year: z.number().optional(),
         term_order: z.number().optional(),
         notes: z.string().optional(),
+        position_x: z.number().optional(),
+        position_y: z.number().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -286,6 +288,8 @@ export const planRouter = createTRPCRouter({
           year: input.year,
           term_order: input.term_order,
           notes: input.notes,
+          position_x: input.position_x,
+          position_y: input.position_y,
         })
         .select()
         .single();
@@ -310,6 +314,8 @@ export const planRouter = createTRPCRouter({
         notes: z.string().optional(),
         is_completed: z.boolean().optional(),
         grade: z.string().optional(),
+        position_x: z.number().optional(),
+        position_y: z.number().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -332,6 +338,67 @@ export const planRouter = createTRPCRouter({
       }
 
       return data;
+    }),
+
+  /**
+   * Bulk update course positions in a plan (for drag-and-drop)
+   */
+  updatePositions: publicProcedure
+    .input(
+      z.object({
+        plan_id: z.string().uuid(),
+        positions: z.array(
+          z.object({
+            course_id: z.string(),
+            position_x: z.number(),
+            position_y: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user) {
+        throw new Error("Not authenticated");
+      }
+
+      const supabase = supabaseAdmin;
+
+      // Verify plan belongs to user
+      const { data: plan } = await supabase
+        .from("course_plans")
+        .select("id")
+        .eq("id", input.plan_id)
+        .eq("user_id", ctx.user.sub)
+        .single();
+
+      if (!plan) {
+        throw new Error("Course plan not found or access denied");
+      }
+
+      // Update each course position
+      const updates = await Promise.all(
+        input.positions.map(async ({ course_id, position_x, position_y }) => {
+          const { data, error } = await supabase
+            .from("plan_courses")
+            .update({ position_x, position_y })
+            .eq("plan_id", input.plan_id)
+            .eq("course_id", course_id)
+            .select();
+
+          if (error) {
+            console.error(`Failed to update position for ${course_id}:`, error);
+            return null;
+          }
+
+          return data;
+        })
+      );
+
+      return { 
+        success: true, 
+        updated: updates.filter(Boolean).length,
+        total: input.positions.length 
+      };
     }),
 
   /**

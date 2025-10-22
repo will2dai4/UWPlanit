@@ -172,6 +172,8 @@ export type Database = {
           notes: string | null
           is_completed: boolean | null
           grade: string | null
+          position_x: number | null
+          position_y: number | null
           created_at: string | null
           updated_at: string | null
         }
@@ -185,6 +187,8 @@ export type Database = {
           notes?: string | null
           is_completed?: boolean | null
           grade?: string | null
+          position_x?: number | null
+          position_y?: number | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -198,6 +202,8 @@ export type Database = {
           notes?: string | null
           is_completed?: boolean | null
           grade?: string | null
+          position_x?: number | null
+          position_y?: number | null
           created_at?: string | null
           updated_at?: string | null
         }

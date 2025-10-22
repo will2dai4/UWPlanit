@@ -15,7 +15,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
     if (session?.user) {
       user = session.user;
     }
-  } catch (error) {
+  } catch {
     // Session not available - this is fine for public procedures
     console.debug("No Auth0 session available");
   }
