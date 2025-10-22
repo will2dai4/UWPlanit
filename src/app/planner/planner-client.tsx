@@ -2,6 +2,7 @@
 
 import { useState, useEffect, startTransition, useMemo } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
@@ -124,9 +125,12 @@ export function PlannerClient() {
       {/* Top nav – removed sidebar toggle */}
       <header className="border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Course Planner
-          </h1>
+          <div className="flex items-center space-x-3">
+            <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Course Planner
+            </h1>
+          </div>
           <nav className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" onClick={() => router.push("/")}>Home</Button>
             <Button variant="ghost" size="sm" onClick={() => router.push("/graph")}>Graph</Button>
