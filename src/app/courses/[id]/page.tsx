@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Course } from "@/types/course";
 
 interface CoursePageProps {
   params: {
@@ -13,9 +14,9 @@ interface CoursePageProps {
 
 export default function CoursePage({ params }: CoursePageProps) {
   const { data: course, isLoading: courseLoading } = trpc.course.getById.useQuery({ id: params.id });
-  const { data: prerequisites = [] } = trpc.course.getPrerequisites.useQuery({ id: params.id });
-  const { data: corequisites = [] } = trpc.course.getCorequisites.useQuery({ id: params.id });
-  const { data: antirequisites = [] } = trpc.course.getAntirequisites.useQuery({ id: params.id });
+  const { data: prerequisites = [] as Course[] } = trpc.course.getPrerequisites.useQuery({ id: params.id });
+  const { data: corequisites = [] as Course[] } = trpc.course.getCorequisites.useQuery({ id: params.id });
+  const { data: antirequisites = [] as Course[] } = trpc.course.getAntirequisites.useQuery({ id: params.id });
 
   if (courseLoading) {
     return (
@@ -77,7 +78,7 @@ export default function CoursePage({ params }: CoursePageProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {prerequisites.map((prereq) => (
+                  {prerequisites.map((prereq: Course) => (
                     <Link key={prereq.id} href={`/courses/${prereq.id}`}>
                       <Card className="hover:shadow-md transition-shadow">
                         <CardHeader>
@@ -99,7 +100,7 @@ export default function CoursePage({ params }: CoursePageProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {corequisites.map((coreq) => (
+                  {corequisites.map((coreq: Course) => (
                     <Link key={coreq.id} href={`/courses/${coreq.id}`}>
                       <Card className="hover:shadow-md transition-shadow">
                         <CardHeader>
@@ -121,7 +122,7 @@ export default function CoursePage({ params }: CoursePageProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {antirequisites.map((antireq) => (
+                  {antirequisites.map((antireq: Course) => (
                     <Link key={antireq.id} href={`/courses/${antireq.id}`}>
                       <Card className="hover:shadow-md transition-shadow">
                         <CardHeader>

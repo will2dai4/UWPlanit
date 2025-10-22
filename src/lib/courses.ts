@@ -11,12 +11,12 @@ export function getAllCourses(): Course[] {
   return [];
 }
 
-export function getCourseById(id: string): Course | undefined {
+export function getCourseById(_id: string): Course | undefined {
   console.warn("getCourseById is deprecated. Use trpc.course.getById.useQuery({ id }) instead");
   return undefined;
 }
 
-export function getCoursesByDepartment(department: string): Course[] {
+export function getCoursesByDepartment(_department: string): Course[] {
   console.warn("getCoursesByDepartment is deprecated. Use trpc.course.getByDepartment.useQuery({ department }) instead");
   return [];
 }
@@ -26,32 +26,32 @@ export function getAllDepartments(): string[] {
   return [];
 }
 
-export function getCoursesByLevel(level: number): Course[] {
+export function getCoursesByLevel(_level: number): Course[] {
   console.warn("getCoursesByLevel is deprecated. Use trpc.course.getByLevel.useQuery({ level }) instead");
   return [];
 }
 
-export function searchCourses(query: string): Course[] {
+export function searchCourses(_query: string): Course[] {
   console.warn("searchCourses is deprecated. Use trpc.course.search.useQuery({ query }) instead");
   return [];
 }
 
-export function getPrerequisiteCourses(course: Course): Course[] {
+export function getPrerequisiteCourses(_course: Course): Course[] {
   console.warn("getPrerequisiteCourses is deprecated. Use trpc.course.getPrerequisites.useQuery({ id: course.id }) instead");
   return [];
 }
 
-export function getCorequisiteCourses(course: Course): Course[] {
+export function getCorequisiteCourses(_course: Course): Course[] {
   console.warn("getCorequisiteCourses is deprecated. Use trpc.course.getCorequisites.useQuery({ id: course.id }) instead");
   return [];
 }
 
-export function getAntirequisiteCourses(course: Course): Course[] {
+export function getAntirequisiteCourses(_course: Course): Course[] {
   console.warn("getAntirequisiteCourses is deprecated. Use trpc.course.getAntirequisites.useQuery({ id: course.id }) instead");
   return [];
 }
 
-export function getCoursesByTerm(term: string): Course[] {
+export function getCoursesByTerm(_term: string): Course[] {
   console.warn("getCoursesByTerm is deprecated. Use trpc.course.getByTerm.useQuery({ term }) instead");
   return [];
 }

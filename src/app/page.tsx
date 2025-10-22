@@ -7,7 +7,7 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { HeroSection } from "@/components/hero-section";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";

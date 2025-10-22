@@ -14,7 +14,8 @@ import { useState } from "react";
 
 export default function CoursesPage() {
   const { data: courses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
-  const { data: departments = [], isLoading: departmentsLoading } = trpc.course.getAllDepartments.useQuery();
+  const { data: departmentsData, isLoading: departmentsLoading } = trpc.course.getAllDepartments.useQuery();
+  const departments = (departmentsData as string[]) || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 

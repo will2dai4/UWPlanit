@@ -4,7 +4,7 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { motion } from "framer-motion";
@@ -77,7 +77,7 @@ export default function GraphPage() {
   const handleRemoveFromPlan = (course: Course) =>
     setPlannedCourses(plannedCourses.filter((c) => c.id !== course.id));
 
-  if (coursesLoading || !courses.length)
+  if (coursesLoading || !allCourses.length)
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>

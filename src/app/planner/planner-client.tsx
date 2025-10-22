@@ -2,7 +2,7 @@
 
 import { useState, useEffect, startTransition, useMemo } from "react";
 import dynamic from "next/dynamic";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
 import { useRouter } from "next/navigation";
