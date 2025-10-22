@@ -1,5 +1,4 @@
 import { getSession } from "@auth0/nextjs-auth0";
-import { cookies } from "next/headers";
 
 /**
  * Server-side session utility that safely handles Auth0 session fetching
@@ -19,9 +18,8 @@ export async function getServerSession() {
   }
 
   try {
-    // Use cookies() to get the request cookies in a server component
-    const cookieStore = await cookies();
-    const session = await getSession(cookieStore);
+    // getSession() automatically handles cookies in App Router context
+    const session = await getSession();
     return session;
   } catch (error) {
     console.warn("Failed to get Auth0 session:", error);
