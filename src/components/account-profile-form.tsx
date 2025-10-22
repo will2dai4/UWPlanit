@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -41,6 +41,22 @@ export default function AccountProfileForm({
   const [program, setProgram] = useState(initialProgram);
   const [term, setTerm] = useState(initialTerm);
   const [submitting, setSubmitting] = useState(false);
+
+  // Add ESC key handler to cancel
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !submitting) {
+        router.push("/");
+      }
+    };
+    
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [router, submitting]);
+
+  const handleCancel = () => {
+    router.push("/");
+  };
 
   const handleSave = async () => {
     if (!name || !program || !term) return;
@@ -110,9 +126,27 @@ export default function AccountProfileForm({
         </Select>
       </div>
 
-      <Button disabled={!name || !program || !term || submitting} onClick={handleSave}>
-        {submitting ? "Saving…" : "Save"}
-      </Button>
+      <div className="flex gap-3">
+        <Button
+          variant="outline"
+          onClick={handleCancel}
+          disabled={submitting}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={!name || !program || !term || submitting}
+          onClick={handleSave}
+          className="flex-1"
+        >
+          {submitting ? "Saving…" : "Save Changes"}
+        </Button>
+      </div>
+      
+      <p className="text-xs text-slate-500 text-center mt-2">
+        Press <kbd className="px-2 py-1 text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-200 rounded">ESC</kbd> to cancel
+      </p>
     </div>
   );
 }

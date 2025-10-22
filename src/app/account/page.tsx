@@ -27,7 +27,15 @@ export default async function AccountPage() {
 
   return (
     <main className="container mx-auto max-w-3xl px-6 py-12">
-      <h1 className="mb-8 text-3xl font-bold">My Account</h1>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">My Account</h1>
+        <a
+          href="/"
+          className="text-sm text-slate-600 hover:text-slate-900 underline-offset-4 hover:underline"
+        >
+          ← Back to Home
+        </a>
+      </div>
 
       <section className="mb-12 rounded-lg border bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xl font-semibold">Profile</h2>
