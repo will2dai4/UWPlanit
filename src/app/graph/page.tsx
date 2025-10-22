@@ -4,13 +4,14 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
+import { trpc } from "@/lib/trpc";
 
 const CourseSearch = dynamic(
   () => import("@/components/course-search").then((m) => m.CourseSearch),
@@ -37,17 +38,23 @@ export default function GraphPage() {
   // Empty `departments` now means show all courses.
   const [departments, setDepartments] = useState<string[]>([]);
 
+  // Load courses from database via tRPC
+  const { data: allCourses = [], isLoading: coursesLoading, error: coursesError } = trpc.course.getAll.useQuery();
+
   useEffect(() => {
-    (async () => {
-      const courseModule = await import("@/data/courses.json");
-      const data = courseModule.default as CourseData;
-      setCourses(data.courses);
-    })();
-  }, []);
+    if (allCourses.length > 0) {
+      setCourses(allCourses);
+    }
+    if (coursesError) {
+      console.error('Error loading courses:', coursesError);
+    }
+  }, [allCourses, coursesError]);
 
   const filteredCourses = useMemo(() => {
     if (!courses.length) return [] as Course[];
-    if (departments.length === 0) return [] as Course[]; // No filters selected → show nothing
+    if (departments.length === 0) {
+      return courses; // No filters selected → show all courses
+    }
     return courses.filter((c) => departments.includes(c.department));
   }, [courses, departments]);
 
@@ -70,10 +77,10 @@ export default function GraphPage() {
   const handleRemoveFromPlan = (course: Course) =>
     setPlannedCourses(plannedCourses.filter((c) => c.id !== course.id));
 
-  if (!courses.length)
+  if (coursesLoading || !allCourses.length)
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        Loading…
+        <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>
       </div>
     );
 

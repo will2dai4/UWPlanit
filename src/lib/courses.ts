@@ -1,67 +1,57 @@
-import { Course, CourseData } from "@/types/course";
-import courseData from "@/data/courses.json";
+// This file is deprecated - use tRPC queries instead
+// All course data is now fetched from the database via tRPC
 
-// Load course data
-const courses: Course[] = (courseData as CourseData).courses;
+import { Course } from "@/types/course";
 
-// Get all courses
+// Legacy functions for backward compatibility
+// These should be replaced with tRPC queries in components
+
 export function getAllCourses(): Course[] {
-  return courses;
+  console.warn("getAllCourses is deprecated. Use trpc.course.getAll.useQuery() instead");
+  return [];
 }
 
-// Get course by ID
-export function getCourseById(id: string): Course | undefined {
-  return courses.find((course) => course.id === id);
+export function getCourseById(_id: string): Course | undefined {
+  console.warn("getCourseById is deprecated. Use trpc.course.getById.useQuery({ id }) instead");
+  return undefined;
 }
 
-// Get courses by department
-export function getCoursesByDepartment(department: string): Course[] {
-  return courses.filter((course) => course.department === department);
+export function getCoursesByDepartment(_department: string): Course[] {
+  console.warn("getCoursesByDepartment is deprecated. Use trpc.course.getByDepartment.useQuery({ department }) instead");
+  return [];
 }
 
-// Get all departments
 export function getAllDepartments(): string[] {
-  return Array.from(new Set(courses.map((course) => course.department))).sort();
+  console.warn("getAllDepartments is deprecated. Use trpc.course.getAllDepartments.useQuery() instead");
+  return [];
 }
 
-// Get courses by level
-export function getCoursesByLevel(level: number): Course[] {
-  return courses.filter((course) => course.level === level);
+export function getCoursesByLevel(_level: number): Course[] {
+  console.warn("getCoursesByLevel is deprecated. Use trpc.course.getByLevel.useQuery({ level }) instead");
+  return [];
 }
 
-// Search courses
-export function searchCourses(query: string): Course[] {
-  const searchTerm = query.toLowerCase();
-  return courses.filter(
-    (course) =>
-      course.code.toLowerCase().includes(searchTerm) ||
-      course.name.toLowerCase().includes(searchTerm) ||
-      course.description.toLowerCase().includes(searchTerm)
-  );
+export function searchCourses(_query: string): Course[] {
+  console.warn("searchCourses is deprecated. Use trpc.course.search.useQuery({ query }) instead");
+  return [];
 }
 
-// Get prerequisite courses
-export function getPrerequisiteCourses(course: Course): Course[] {
-  return course.prerequisites
-    .map((prereq) => getCourseById(prereq))
-    .filter((course): course is Course => course !== undefined);
+export function getPrerequisiteCourses(_course: Course): Course[] {
+  console.warn("getPrerequisiteCourses is deprecated. Use trpc.course.getPrerequisites.useQuery({ id: course.id }) instead");
+  return [];
 }
 
-// Get corequisite courses
-export function getCorequisiteCourses(course: Course): Course[] {
-  return course.corequisites
-    .map((coreq) => getCourseById(coreq))
-    .filter((course): course is Course => course !== undefined);
+export function getCorequisiteCourses(_course: Course): Course[] {
+  console.warn("getCorequisiteCourses is deprecated. Use trpc.course.getCorequisites.useQuery({ id: course.id }) instead");
+  return [];
 }
 
-// Get antirequisite courses
-export function getAntirequisiteCourses(course: Course): Course[] {
-  return course.antirequisites
-    .map((antireq) => getCourseById(antireq))
-    .filter((course): course is Course => course !== undefined);
+export function getAntirequisiteCourses(_course: Course): Course[] {
+  console.warn("getAntirequisiteCourses is deprecated. Use trpc.course.getAntirequisites.useQuery({ id: course.id }) instead");
+  return [];
 }
 
-// Get courses by term
-export function getCoursesByTerm(term: string): Course[] {
-  return courses.filter((course) => course.terms.includes(term));
+export function getCoursesByTerm(_term: string): Course[] {
+  console.warn("getCoursesByTerm is deprecated. Use trpc.course.getByTerm.useQuery({ term }) instead");
+  return [];
 }

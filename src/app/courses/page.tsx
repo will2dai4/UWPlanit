@@ -1,6 +1,6 @@
 "use client";
 
-import { getAllCourses, getAllDepartments } from "@/lib/courses";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,8 +13,9 @@ import {
 import { useState } from "react";
 
 export default function CoursesPage() {
-  const courses = getAllCourses();
-  const departments = getAllDepartments();
+  const { data: courses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
+  const { data: departmentsData, isLoading: departmentsLoading } = trpc.course.getAllDepartments.useQuery();
+  const departments = (departmentsData as string[]) || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 
@@ -25,6 +26,16 @@ export default function CoursesPage() {
     const matchesDepartment = !selectedDepartment || course.department === selectedDepartment;
     return matchesSearch && matchesDepartment;
   });
+
+  if (coursesLoading || departmentsLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-center">
+          <span className="animate-pulse text-sm text-slate-600">Loading courses...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">

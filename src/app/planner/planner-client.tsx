@@ -2,10 +2,11 @@
 
 import { useState, useEffect, startTransition, useMemo } from "react";
 import dynamic from "next/dynamic";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
 import { useRouter } from "next/navigation";
+import { trpc } from "@/lib/trpc";
 
 // Lazy-load heavy components
 const CourseSearch = dynamic(
@@ -40,15 +41,15 @@ export function PlannerClient() {
   // sidebarOpen state removed
 
   /* ------------------------------------------------------------
-   *  Load dataset once (identical to /graph)
+   *  Load dataset from database via tRPC
    * ---------------------------------------------------------- */
+  const { data: allCourses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
+
   useEffect(() => {
-    (async () => {
-      const courseModule = await import("@/data/courses.json");
-      const data = courseModule.default as CourseData;
-      setCourses(data.courses);
-    })();
-  }, []);
+    if (allCourses.length > 0) {
+      setCourses(allCourses);
+    }
+  }, [allCourses]);
 
   const handleAddCourse = (course: Course) => {
     setPlannedCourses((prev) => {
@@ -76,10 +77,10 @@ export function PlannerClient() {
     return Array.from(set.values());
   }, [plannedCourses, selectedCourse]);
 
-  if (!courses.length) {
+  if (coursesLoading || !courses.length) {
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        Loading…
+        <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>
       </div>
     );
   }

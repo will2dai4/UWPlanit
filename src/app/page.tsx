@@ -7,7 +7,7 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import type { Course, CourseData } from "@/types/course";
+import type { Course } from "@/types/course";
 import { HeroSection } from "@/components/hero-section";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
+import { trpc } from "@/lib/trpc";
 
 // Heavy, purely-client components are code-split for faster first paint.
 const CourseSearch = dynamic(
@@ -71,21 +72,14 @@ export default function Home() {
     return Array.from(uniqueMap.values());
   }, [filteredCourses, selectedCourse]);
 
-  // Lazy-load the static courses JSON only after the user enters the app.
+  // Load courses from database via tRPC
+  const { data: allCourses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
+
   useEffect(() => {
-    if (!showApp || courses.length) return;
-
-    let isMounted = true;
-    (async () => {
-      const courseModule = await import("@/data/courses.json");
-      const data = courseModule.default as CourseData;
-      if (isMounted) setCourses(data.courses);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [showApp, courses.length]);
+    if (allCourses.length > 0) {
+      setCourses(allCourses);
+    }
+  }, [allCourses]);
 
   const handleSelectCourse = (course: Course | null) => {
     // Mark update non-blocking so Graph remains interactive.
@@ -113,8 +107,8 @@ export default function Home() {
     );
   }
 
-  // While courses are streaming down, display a lightweight placeholder.
-  if (!courses.length) {
+  // While courses are loading, display a lightweight placeholder.
+  if (coursesLoading || !courses.length) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>

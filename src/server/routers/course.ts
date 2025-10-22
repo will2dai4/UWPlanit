@@ -4,11 +4,33 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 
 export const courseRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
-    const { data, error } = await ctx.supabase.from("courses").select("*").order("code");
-    if (error) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    // Supabase has a default limit of 1000 rows, so we need to fetch in batches
+    const allCourses = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .order("code")
+        .range(from, from + batchSize - 1);
+      
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+      
+      if (data && data.length > 0) {
+        allCourses.push(...data);
+        from += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
     }
-    return data ?? [];
+
+    return allCourses;
   }),
 
   getById: publicProcedure
@@ -43,6 +65,60 @@ export const courseRouter = createTRPCRouter({
       return data ?? [];
     }),
 
+  getByDepartment: publicProcedure
+    .input(z.object({ department: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .eq("department", input.department)
+        .order("code");
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+      return data ?? [];
+    }),
+
+  getByLevel: publicProcedure
+    .input(z.object({ level: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .eq("level", input.level)
+        .order("code");
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+      return data ?? [];
+    }),
+
+  getByTerm: publicProcedure
+    .input(z.object({ term: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { data, error } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .contains("terms", [input.term])
+        .order("code");
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+      return data ?? [];
+    }),
+
+  getAllDepartments: publicProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
+      .from("courses")
+      .select("department")
+      .order("department");
+    if (error) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    }
+    const departments = Array.from(new Set(data?.map((c: { department: string }) => c.department) ?? [])).sort();
+    return departments;
+  }),
+
   getPrerequisites: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -69,5 +145,61 @@ export const courseRouter = createTRPCRouter({
       }
 
       return prereqs ?? [];
+    }),
+
+  getCorequisites: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { data: courseRow, error } = await ctx.supabase
+        .from("courses")
+        .select("corequisites")
+        .eq("id", input.id)
+        .single();
+
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+
+      const coreqIds = (courseRow?.corequisites ?? []) as string[];
+      if (!coreqIds.length) return [];
+
+      const { data: coreqs, error: err2 } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .in("id", coreqIds);
+
+      if (err2) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err2.message });
+      }
+
+      return coreqs ?? [];
+    }),
+
+  getAntirequisites: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { data: courseRow, error } = await ctx.supabase
+        .from("courses")
+        .select("antirequisites")
+        .eq("id", input.id)
+        .single();
+
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+
+      const antireqIds = (courseRow?.antirequisites ?? []) as string[];
+      if (!antireqIds.length) return [];
+
+      const { data: antireqs, error: err2 } = await ctx.supabase
+        .from("courses")
+        .select("*")
+        .in("id", antireqIds);
+
+      if (err2) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err2.message });
+      }
+
+      return antireqs ?? [];
     }),
 });
