@@ -8,13 +8,6 @@ import { Search } from "lucide-react";
 import { Course } from "@/types/course";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 
 interface CourseSearchProps {
   courses: Course[];
