@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase.types";
 
 // Check if Supabase is configured
@@ -14,7 +14,7 @@ const isSupabaseConfigured = () => {
 // ---------------------------------------------------------------------------
 // Server-side client (service-role key) — DO NOT expose to the browser.
 // ---------------------------------------------------------------------------
-export const supabaseAdmin = isSupabaseConfigured()
+export const supabaseAdmin: SupabaseClient<Database> = isSupabaseConfigured()
   ? createClient<Database>(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -23,18 +23,18 @@ export const supabaseAdmin = isSupabaseConfigured()
         global: { headers: { "X-Client-Info": "uw-graph-server" } },
       }
     )
-  : null as any; // Fallback to null if not configured (with type assertion for compatibility)
+  : (null as unknown as SupabaseClient<Database>); // Fallback to null if not configured (with type assertion for compatibility)
 
 // ---------------------------------------------------------------------------
 // Browser / RSC client — uses the public anon key, created lazily to reduce
 // bundle weight when not needed client-side.
 // ---------------------------------------------------------------------------
-export const supabaseClient = () => {
+export const supabaseClient = (): SupabaseClient<Database> | null => {
   if (!isSupabaseConfigured()) {
     console.warn(
       "Supabase not configured. Please set SUPABASE_URL and SUPABASE keys in your environment variables."
     );
-    return null as any;
+    return null;
   }
 
   return createClient<Database>(

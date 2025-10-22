@@ -81,32 +81,111 @@ A modern web application for University of Waterloo students to visualize course
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - The `anon` public key
      - `SUPABASE_SERVICE_ROLE_KEY` - The `service_role` secret key (keep this secure!)
 
-4. Run the development server:
+4. Run database migrations:
+
+   Navigate to the Supabase SQL Editor and run the migrations in order:
+   - `supabase/migrations/0001_create_courses_table.sql`
+   - `supabase/migrations/0002_create_users_and_plans.sql`
+
+   Alternatively, if you have the Supabase CLI:
+   ```bash
+   supabase link --project-ref your-project-ref
+   supabase db push
+   ```
+
+   See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed migration instructions.
+
+5. Run the development server:
 
    ```bash
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Database Schema
+
+The application uses three main tables:
+
+- **`courses`** - University course catalog
+- **`users`** - User profiles (synced with Auth0)
+- **`course_plans`** - User-created course plans
+- **`plan_courses`** - Courses in each plan with scheduling info
+
+For detailed schema information and migration instructions, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md).
+
+## API Documentation
+
+### tRPC Routers
+
+The application uses tRPC for type-safe API calls:
+
+- **`course`** - Course catalog operations
+  - `getAll()` - Get all courses
+  - `getById(id)` - Get course by ID
+  - `search(query)` - Search courses
+
+- **`user`** - User profile management
+  - `getProfile()` - Get current user profile
+  - `upsertProfile(data)` - Create/update profile
+  - `updateProfile(data)` - Update profile
+
+- **`plan`** - Course planning operations
+  - `getAll()` - Get all user plans
+  - `getActive()` - Get active plan
+  - `getById(id)` - Get plan by ID
+  - `create(data)` - Create new plan
+  - `update(data)` - Update plan
+  - `delete(id)` - Delete plan
+  - `addCourse(data)` - Add course to plan
+  - `updateCourse(data)` - Update course in plan
+  - `removeCourse(id)` - Remove course from plan
 
 ## Project Structure
 
 ```
 src/
-├── app/                 # Next.js app directory
-│   ├── layout.tsx      # Root layout
-│   ├── page.tsx        # Home page
-│   └── globals.css     # Global styles
-├── components/         # React components
-│   ├── ui/            # UI components
-│   ├── course-graph.tsx
-│   ├── course-search.tsx
-│   ├── course-drawer.tsx
-│   └── course-plan.tsx
-├── lib/               # Utility functions
-│   └── utils.ts
-└── types/             # TypeScript types
-    └── course.ts
+├── app/                      # Next.js app directory
+│   ├── api/                 # API routes
+│   │   ├── auth/           # Auth0 authentication
+│   │   ├── profile/        # User profile management
+│   │   └── trpc/           # tRPC API endpoint
+│   ├── account/            # User account page
+│   ├── courses/            # Course catalog pages
+│   ├── planner/            # Course planner page
+│   ├── graph/              # Course graph visualization
+│   ├── layout.tsx          # Root layout
+│   ├── page.tsx            # Home page
+│   └── globals.css         # Global styles
+├── components/              # React components
+│   ├── ui/                 # UI components (Shadcn)
+│   ├── auth/               # Authentication components
+│   ├── course-graph.tsx    # Course graph visualization
+│   ├── course-search.tsx   # Course search component
+│   ├── course-drawer.tsx   # Course details drawer
+│   └── course-plan.tsx     # Course plan component
+├── server/                  # Server-side code
+│   ├── routers/            # tRPC routers
+│   │   ├── course.ts       # Course operations
+│   │   ├── user.ts         # User operations
+│   │   ├── plan.ts         # Planning operations
+│   │   └── _app.ts         # Router aggregation
+│   └── trpc.ts             # tRPC configuration
+├── lib/                     # Utility functions
+│   ├── auth-server.ts      # Server-side auth utils
+│   ├── supabase.ts         # Supabase client
+│   ├── supabase.types.ts   # Generated DB types
+│   ├── plans.ts            # Planning utilities
+│   ├── trpc.ts             # tRPC client setup
+│   └── utils.ts            # General utilities
+└── types/                   # TypeScript types
+    ├── course.ts           # Course types
+    └── user.ts             # User and plan types
+supabase/
+├── migrations/              # Database migrations
+│   ├── 0001_create_courses_table.sql
+│   └── 0002_create_users_and_plans.sql
+└── example_queries.sql      # Example SQL queries
 ```
 
 ## Contributing

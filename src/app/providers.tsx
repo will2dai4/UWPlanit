@@ -8,6 +8,7 @@ import { httpBatchLink } from "@trpc/client";
 import { trpc } from "@/lib/trpc";
 import superjson from "superjson";
 import { UserProvider } from "@auth0/nextjs-auth0/client";
+import type { UserProfile } from "@auth0/nextjs-auth0/client";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,7 +18,7 @@ interface ProvidersProps {
    * would normally run on mount, eliminating the visual delay before the
    * account avatar appears.
    */
-  initialUser?: any;
+  initialUser?: UserProfile;
 }
 
 export function Providers({ children, initialUser }: ProvidersProps) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, startTransition, useMemo } from "react";
+import { useState, useEffect, startTransition, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import type { Course } from "@/types/course";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { useToast } from "@/components/ui/use-toast";
 
 // Lazy-load heavy components
 const CourseSearch = dynamic(
@@ -35,18 +36,32 @@ const CoursePlan = dynamic(
  */
 export function PlannerClient() {
   const router = useRouter();
-  // Remove sidebar UI – planner now always shows a fixed right panel with search & list.
+  const { toast } = useToast();
+  
+  // State management
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
-  // sidebarOpen state removed
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  
+  // Refs for tracking changes
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const planCoursesMapRef = useRef<Map<string, string>>(new Map()); // courseId -> plan_courses.id
 
   /* ------------------------------------------------------------
    *  Load dataset from database via tRPC
    * ---------------------------------------------------------- */
   const { data: allCourses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
+  
+  // Load or create active plan
+  const { data: activePlan, isLoading: planLoading } = trpc.plan.getActive.useQuery();
+  const createPlan = trpc.plan.create.useMutation();
+  const addCourseToPlan = trpc.plan.addCourse.useMutation();
+  const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
+  const updatePositions = trpc.plan.updatePositions.useMutation();
 
   useEffect(() => {
     if (allCourses.length > 0) {
@@ -54,16 +69,183 @@ export function PlannerClient() {
     }
   }, [allCourses]);
 
-  const handleAddCourse = (course: Course) => {
-    setPlannedCourses((prev) => {
-      if (prev.find((c) => c.id === course.id)) return prev;
-      return [...prev, course];
-    });
-  };
+  // Initialize or create active plan
+  useEffect(() => {
+    const initializePlan = async () => {
+      if (planLoading) return;
 
-  const handleRemoveCourse = (course: Course) => {
-    setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
-  };
+      if (activePlan) {
+        // Load existing plan
+        setActivePlanId(activePlan.id);
+        
+        // Load courses from plan
+        const coursesFromPlan = activePlan.courses?.map((pc) => {
+          // Store plan_courses id for later updates
+          planCoursesMapRef.current.set(pc.course_id, pc.id);
+          
+          // Load saved positions if available
+          if (pc.position_x !== null && pc.position_y !== null) {
+            setNodePositions(prev => {
+              const newMap = new Map(prev);
+              newMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+              return newMap;
+            });
+          }
+          
+          return pc.course;
+        }).filter((c): c is Course => c !== null && c !== undefined) || [];
+
+        setPlannedCourses(coursesFromPlan);
+      } else {
+        // Create a new default plan
+        try {
+          const newPlan = await createPlan.mutateAsync({
+            name: "My Course Plan",
+            description: "Default course plan",
+            is_active: true,
+          });
+          setActivePlanId(newPlan.id);
+          toast({
+            title: "Plan Created",
+            description: "A new course plan has been created for you.",
+          });
+        } catch (error) {
+          console.error("Failed to create plan:", error);
+          toast({
+            title: "Error",
+            description: "Failed to create a course plan. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    initializePlan();
+  }, [activePlan, planLoading, createPlan, toast]);
+
+  // Auto-save positions with debouncing
+  const savePositionsToDatabase = useCallback(
+    (positions: Map<string, { x: number; y: number }>) => {
+      if (!activePlanId) return;
+
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Debounce save for 1 second after last change
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const positionsArray = Array.from(positions.entries()).map(([courseId, pos]) => ({
+            course_id: courseId,
+            position_x: pos.x,
+            position_y: pos.y,
+          }));
+
+          if (positionsArray.length > 0) {
+            await updatePositions.mutateAsync({
+              plan_id: activePlanId,
+              positions: positionsArray,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to save positions:", error);
+        }
+      }, 1000);
+    },
+    [activePlanId, updatePositions]
+  );
+
+  // Handle position changes from graph
+  const handlePositionChange = useCallback(
+    (courseId: string, x: number, y: number) => {
+      setNodePositions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(courseId, { x, y });
+        savePositionsToDatabase(newMap);
+        return newMap;
+      });
+    },
+    [savePositionsToDatabase]
+  );
+
+  const handleAddCourse = useCallback(
+    async (course: Course, position?: { x: number; y: number }) => {
+      // Check if already in plan
+      if (plannedCourses.find((c) => c.id === course.id)) return;
+
+      // Add to UI immediately for responsiveness
+      setPlannedCourses((prev) => [...prev, course]);
+
+      // Save to database
+      if (activePlanId) {
+        try {
+          const result = await addCourseToPlan.mutateAsync({
+            plan_id: activePlanId,
+            course_id: course.id,
+            term: "Unscheduled", // Default term
+            position_x: position?.x,
+            position_y: position?.y,
+          });
+
+          // Store plan_courses id for later updates
+          planCoursesMapRef.current.set(course.id, result.id);
+
+          // If position provided, update local state
+          if (position) {
+            setNodePositions((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(course.id, position);
+              return newMap;
+            });
+          }
+        } catch (error) {
+          console.error("Failed to add course to plan:", error);
+          // Rollback UI change on error
+          setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
+          toast({
+            title: "Error",
+            description: "Failed to add course to plan. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    },
+    [activePlanId, plannedCourses, addCourseToPlan, toast]
+  );
+
+  const handleRemoveCourse = useCallback(
+    async (course: Course) => {
+      // Remove from UI immediately
+      setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
+
+      // Remove from database
+      const planCourseId = planCoursesMapRef.current.get(course.id);
+      if (planCourseId) {
+        try {
+          await removeCourseFromPlan.mutateAsync({ id: planCourseId });
+          planCoursesMapRef.current.delete(course.id);
+          
+          // Remove position
+          setNodePositions((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(course.id);
+            return newMap;
+          });
+        } catch (error) {
+          console.error("Failed to remove course from plan:", error);
+          // Rollback UI change on error
+          setPlannedCourses((prev) => [...prev, course]);
+          toast({
+            title: "Error",
+            description: "Failed to remove course from plan. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    },
+    [removeCourseFromPlan, toast]
+  );
 
   const handleSelectCourse = (course: Course | null) => {
     // Selecting a node should only focus the drawer, not auto-add to plan.
@@ -79,16 +261,26 @@ export function PlannerClient() {
     });
   };
 
-  const handleDeleteNode = (nodeId: string) => {
-    setPlannedCourses((prev) => prev.filter((c) => c.id !== nodeId));
-    // Also remove from selection if it was selected
-    setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
-  };
+  const handleDeleteNode = useCallback(
+    async (nodeId: string) => {
+      const course = plannedCourses.find((c) => c.id === nodeId);
+      if (course) {
+        await handleRemoveCourse(course);
+      }
+      // Also remove from selection if it was selected
+      setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
+    },
+    [plannedCourses, handleRemoveCourse]
+  );
 
-  const handleBulkDelete = () => {
-    setPlannedCourses((prev) => prev.filter((c) => !selectedNodeIds.includes(c.id)));
+  const handleBulkDelete = useCallback(async () => {
+    const coursesToDelete = plannedCourses.filter((c) => selectedNodeIds.includes(c.id));
+    
+    // Delete all selected courses
+    await Promise.all(coursesToDelete.map((course) => handleRemoveCourse(course)));
+    
     setSelectedNodeIds([]);
-  };
+  }, [plannedCourses, selectedNodeIds, handleRemoveCourse]);
 
   const handleToggleSelectionMode = () => {
     setSelectionMode((prev) => !prev);
@@ -112,7 +304,16 @@ export function PlannerClient() {
     return Array.from(set.values());
   }, [plannedCourses, selectedCourse]);
 
-  if (coursesLoading || !courses.length) {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  if (coursesLoading || planLoading || !courses.length) {
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>
@@ -157,6 +358,8 @@ export function PlannerClient() {
             onToggleSelectionMode={handleToggleSelectionMode}
             onBulkDelete={handleBulkDelete}
             onClearSelection={handleClearSelection}
+            initialNodePositions={nodePositions}
+            onNodePositionChange={handlePositionChange}
           />
         </div>
 
