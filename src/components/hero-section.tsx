@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BookOpen, Zap, Target, Sparkles, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Target, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";

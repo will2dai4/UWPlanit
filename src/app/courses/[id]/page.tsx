@@ -49,11 +49,11 @@ export default function CoursePage({ params }: CoursePageProps) {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-1">Description</h3>
-                  <p className="text-gray-600">{course.description}</p>
+                  <p className="text-gray-600">{course.description || "No description available."}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Units</h3>
-                  <p className="text-gray-600">{course.units}</p>
+                  <p className="text-gray-600">{course.units ?? "N/A"}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Department</h3>
@@ -61,11 +61,11 @@ export default function CoursePage({ params }: CoursePageProps) {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Level</h3>
-                  <p className="text-gray-600">{course.level}</p>
+                  <p className="text-gray-600">{course.level ?? "N/A"}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Terms Offered</h3>
-                  <p className="text-gray-600">{course.terms.join(", ")}</p>
+                  <p className="text-gray-600">{course.terms?.join(", ") || "N/A"}</p>
                 </div>
               </div>
             </CardContent>

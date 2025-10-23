@@ -13,12 +13,12 @@ interface CoursePlanProps {
 }
 
 export function CoursePlan({ courses, onRemoveCourse }: CoursePlanProps) {
-  const totalUnits = courses.reduce((sum, course) => sum + course.units, 0);
+  const totalUnits = courses.reduce((sum, course) => sum + (course.units ?? 0), 0);
 
   // Group courses by level
   const coursesByLevel = courses.reduce(
     (acc, course) => {
-      const level = course.level;
+      const level = course.level ?? 0;
       if (!acc[level]) {
         acc[level] = [];
       }
@@ -121,7 +121,8 @@ export function CoursePlan({ courses, onRemoveCourse }: CoursePlanProps) {
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 truncate">{course.name}</p>
-                          {(course.prerequisites.length > 0 || course.corequisites.length > 0) && (
+                          {((course.prerequisites && course.prerequisites.length > 0) || 
+                            (course.corequisites && course.corequisites.length > 0)) && (
                             <div className="flex items-center gap-1 mt-2">
                               <AlertTriangle className="h-3 w-3 text-amber-500" />
                               <span className="text-xs text-amber-600">Has prerequisites</span>
@@ -147,7 +148,7 @@ export function CoursePlan({ courses, onRemoveCourse }: CoursePlanProps) {
       </div>
 
       {/* Prerequisites Warning */}
-      {courses.some((course) => course.prerequisites.length > 0) && (
+      {courses.some((course) => course.prerequisites && course.prerequisites.length > 0) && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="pt-6">

@@ -134,7 +134,7 @@ export function CourseDrawer({ course, onClose, onAddToPlan: _onAddToPlan }: Cou
             </div>
 
             {/* Prerequisites */}
-            {course.prerequisites.length > 0 && (
+            {course.prerequisites && course.prerequisites.length > 0 && (
               <Card className="border-red-200 bg-red-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-red-800">
@@ -160,7 +160,7 @@ export function CourseDrawer({ course, onClose, onAddToPlan: _onAddToPlan }: Cou
             )}
 
             {/* Corequisites */}
-            {course.corequisites.length > 0 && (
+            {course.corequisites && course.corequisites.length > 0 && (
               <Card className="border-yellow-200 bg-yellow-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-yellow-800">
@@ -185,7 +185,7 @@ export function CourseDrawer({ course, onClose, onAddToPlan: _onAddToPlan }: Cou
             )}
 
             {/* Antirequisites */}
-            {course.antirequisites.length > 0 && (
+            {course.antirequisites && course.antirequisites.length > 0 && (
               <Card className="border-gray-200 bg-gray-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-gray-800">
@@ -211,9 +211,9 @@ export function CourseDrawer({ course, onClose, onAddToPlan: _onAddToPlan }: Cou
             )}
 
             {/* No Requirements */}
-            {course.prerequisites.length === 0 &&
-              course.corequisites.length === 0 &&
-              course.antirequisites.length === 0 && (
+            {(!course.prerequisites || course.prerequisites.length === 0) &&
+              (!course.corequisites || course.corequisites.length === 0) &&
+              (!course.antirequisites || course.antirequisites.length === 0) && (
                 <Card className="border-green-200 bg-green-50">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">

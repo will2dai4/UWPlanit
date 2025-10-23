@@ -72,8 +72,8 @@ export default function CoursesPage() {
               <CardDescription>{course.name}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 line-clamp-3">{course.description}</p>
-              {course.prerequisites.length > 0 && (
+              <p className="text-sm text-gray-600 line-clamp-3">{course.description || "No description available."}</p>
+              {course.prerequisites && course.prerequisites.length > 0 && (
                 <p className="text-sm mt-2">
                   <span className="font-semibold">Prerequisites:</span>{" "}
                   {course.prerequisites.join(", ")}
