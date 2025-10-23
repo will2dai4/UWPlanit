@@ -9,15 +9,6 @@ A modern, interactive web application for University of Waterloo students to vis
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/uwplanit?style=social)](https://github.com/yourusername/uwplanit/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/yourusername/uwplanit?style=social)](https://github.com/yourusername/uwplanit/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/pulls)
-
-[![Last Commit](https://img.shields.io/github/last-commit/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/commits/main)
-[![Repo Size](https://img.shields.io/github/repo-size/yourusername/uwplanit)](https://github.com/yourusername/uwplanit)
-[![Contributors](https://img.shields.io/github/contributors/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/graphs/contributors)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 </div>
 
@@ -82,7 +73,6 @@ A modern, interactive web application for University of Waterloo students to vis
 
 ### PWA & Performance
 - **PWA:** @ducanh2912/next-pwa
-- **Monitoring:** Sentry (@sentry/nextjs)
 - **Optimization:** Dynamic imports, code splitting, lazy loading
 
 ### Development Tools
