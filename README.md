@@ -1,4 +1,8 @@
-# UWPlanit
+<p align="center">
+  <img src="https://uwplanit.com/assets/uwplanit-colour-logo.svg" />
+</p>
+
+# [UWPlanit](https://uwplanit.com)
 
 A modern, interactive web application for University of Waterloo students to visualize course dependencies and plan their academic journey with confidence.
 
