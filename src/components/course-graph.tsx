@@ -135,10 +135,14 @@ export function CourseGraph({
   );
 
   // Sync with external initial positions when they change
+  // Use a ref to track if we've already initialized to prevent infinite loops
+  const initializedRef = useRef(false);
+  
   useEffect(() => {
-    if (initialNodePositions && initialNodePositions.size > 0) {
+    if (initialNodePositions && initialNodePositions.size > 0 && !initializedRef.current) {
       setNodePositions(new Map(initialNodePositions));
       nodePositionsRef.current = new Map(initialNodePositions);
+      initializedRef.current = true;
     }
   }, [initialNodePositions]);
   const [contextMenu, setContextMenu] = useState<{

@@ -20,6 +20,33 @@ interface CourseSearchProps {
   showDepartments?: boolean; // new prop
 }
 
+/**
+ * Cookie utility functions for department filters
+ */
+const COOKIE_NAME = "uwplanit_department_filters";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year in seconds
+
+function saveDepartmentsToCookie(departments: string[]): void {
+  if (typeof document === "undefined") return;
+  const value = JSON.stringify(departments);
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Lax`;
+}
+
+function loadDepartmentsFromCookie(): string[] {
+  if (typeof document === "undefined") return [];
+  const cookies = document.cookie.split("; ");
+  const cookie = cookies.find((c) => c.startsWith(`${COOKIE_NAME}=`));
+  if (!cookie) return [];
+  
+  try {
+    const value = decodeURIComponent(cookie.split("=")[1]);
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartments = true }: CourseSearchProps) {
   /* ------------------------------------------------------------------
    * Local state
@@ -27,7 +54,10 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [open, setOpen] = useState(false);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>(() => {
+    // Initialize from cookie on mount
+    return loadDepartmentsFromCookie();
+  });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   /* ------------------------------------------------------------------
@@ -125,8 +155,9 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
     }
   }, [open]);
 
-  // Notify parent when department chips change
+  // Save to cookie and notify parent when department chips change
   useEffect(() => {
+    saveDepartmentsToCookie(selectedDepartments);
     onFiltersChange?.(selectedDepartments);
   }, [selectedDepartments, onFiltersChange]);
 
@@ -135,6 +166,16 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
    * ------------------------------------------------------------------ */
   return (
     <div className="flex flex-col space-y-4">
+      {/* Search box & suggestions */}
+      <div ref={containerRef} className="relative w-full" style={{ zIndex: 10000 }}>
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search courses..."
+          className="pl-8"
+        />
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+      </div>
       {/* Department filter chips */}
       {showDepartments && (
         <div className="flex flex-wrap gap-2">
@@ -157,17 +198,6 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
           })}
         </div>
       )}
-
-      {/* Search box & suggestions */}
-      <div ref={containerRef} className="relative w-full" style={{ zIndex: 10000 }}>
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search courses..."
-          className="pl-8"
-        />
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-      </div>
 
       {/* Render dropdown in a portal to avoid overflow clipping */}
       {open && typeof window !== "undefined" && createPortal(
