@@ -7,7 +7,7 @@ import { getServerSession } from "@/lib/auth-server";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "UW Course Graph & Planner",
+  title: "UWPlanit - Course Graph & Planner",
   description:
     "Visualize course dependencies and plan your academic journey at the University of Waterloo.",
   icons: {
