@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, startTransition, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,12 +42,8 @@ const CourseDrawer = dynamic(
   () => import("@/components/course-drawer").then((m) => m.CourseDrawer),
   { ssr: false }
 );
-const CoursePlan = dynamic(() => import("@/components/course-plan").then((m) => m.CoursePlan), {
-  ssr: false,
-});
 
 export default function GraphPage() {
-  const router = useRouter();
   const { user, isLoading: authLoading } = useUser();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
@@ -93,9 +88,6 @@ export default function GraphPage() {
     if (!plannedCourses.find((c) => c.id === course.id))
       setPlannedCourses([...plannedCourses, course]);
   };
-
-  const handleRemoveFromPlan = (course: Course) =>
-    setPlannedCourses(plannedCourses.filter((c) => c.id !== course.id));
 
   if (coursesLoading || !allCourses.length)
     return (
