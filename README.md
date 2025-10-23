@@ -289,10 +289,75 @@ The application uses a modern design system built with Tailwind CSS and CSS vari
 
 ### Vercel (Recommended)
 
-1. Push your code to GitHub
-2. Import project to Vercel
-3. Configure environment variables in Vercel dashboard
-4. Deploy!
+This application is optimized for deployment on Vercel. Follow these steps:
+
+#### Quick Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/uwplanit)
+
+#### Manual Deployment Steps
+
+1. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "Ready for production"
+   git push origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Click "Add New" → "Project"
+   - Select your GitHub repository
+   - Click "Import"
+
+3. **Configure Environment Variables**
+   
+   In the Vercel dashboard, add these environment variables:
+   
+   **Required:**
+   ```
+   AUTH0_SECRET=<generate with: openssl rand -hex 32>
+   AUTH0_BASE_URL=https://your-domain.vercel.app
+   AUTH0_ISSUER_BASE_URL=<your-auth0-domain>
+   AUTH0_CLIENT_ID=<from-auth0>
+   AUTH0_CLIENT_SECRET=<from-auth0>
+   NEXT_PUBLIC_SUPABASE_URL=<from-supabase>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-supabase>
+   SUPABASE_URL=<from-supabase>
+   SUPABASE_SERVICE_ROLE_KEY=<from-supabase>
+   ```
+   
+   **Optional:**
+   ```
+   NEXT_PUBLIC_SENTRY_DSN=<for-error-tracking>
+   ```
+
+4. **Update Auth0 Settings**
+   
+   After deployment, update your Auth0 application settings:
+   - Allowed Callback URLs: `https://your-domain.vercel.app/api/auth/callback`
+   - Allowed Logout URLs: `https://your-domain.vercel.app`
+   - Allowed Web Origins: `https://your-domain.vercel.app`
+
+5. **Deploy!**
+   
+   Click "Deploy" and wait for the build to complete (2-5 minutes).
+
+#### Comprehensive Guide
+
+For a complete step-by-step deployment guide with troubleshooting, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+For a production deployment checklist, see [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md).
+
+### Environment Variables Reference
+
+Copy `.env.template` to create your `.env.local`:
+
+```bash
+cp .env.template .env.local
+```
+
+Then fill in your actual values. **Never commit `.env.local` to version control.**
 
 ### Other Platforms
 
@@ -307,6 +372,7 @@ Make sure to:
 2. Configure build command: `npm run build`
 3. Configure start command: `npm start`
 4. Set Node.js version to 18+
+5. Configure proper security headers (see `vercel.json` for reference)
 
 ## Security Best Practices
 
