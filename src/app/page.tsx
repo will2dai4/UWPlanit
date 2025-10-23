@@ -133,7 +133,7 @@ export default function Home() {
             <div className="flex items-center space-x-3">
               <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                UWPlanit
+                UW Course Graph
               </h1>
             </div>
           </div>
@@ -141,8 +141,8 @@ export default function Home() {
             <Button variant="ghost" size="sm" onClick={() => setShowApp(false)}>
               Home
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => router.push("/graph")}>Graph</Button>
             <Button variant="ghost" size="sm" onClick={() => router.push("/planner")}>Planner</Button>
+            <Button variant="ghost" size="sm">About</Button>
             {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
           </nav>
         </div>

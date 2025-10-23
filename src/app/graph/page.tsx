@@ -4,7 +4,6 @@ import { useState, useEffect, startTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
 import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -13,24 +12,6 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
 import { trpc } from "@/lib/trpc";
-
-/**
- * Load department filters from cookie
- */
-function loadDepartmentsFromCookie(): string[] {
-  if (typeof document === "undefined") return [];
-  const cookies = document.cookie.split("; ");
-  const cookie = cookies.find((c) => c.startsWith("uwplanit_department_filters="));
-  if (!cookie) return [];
-  
-  try {
-    const value = decodeURIComponent(cookie.split("=")[1]);
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 const CourseSearch = dynamic(
   () => import("@/components/course-search").then((m) => m.CourseSearch),
@@ -55,8 +36,7 @@ export default function GraphPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   // Empty `departments` now means show all courses.
-  // Initialize from cookie to restore user's last filter selection
-  const [departments, setDepartments] = useState<string[]>(() => loadDepartmentsFromCookie());
+  const [departments, setDepartments] = useState<string[]>([]);
 
   // Load courses from database via tRPC
   const { data: allCourses = [], isLoading: coursesLoading, error: coursesError } = trpc.course.getAll.useQuery();
@@ -117,22 +97,19 @@ export default function GraphPage() {
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <Link href="/" className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="flex items-center space-x-3">
               <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                UWPlanit
+                UW Course Graph
               </h1>
-            </Link>
+            </div>
           </div>
           <nav className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">Home</Link>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
+              Home
             </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/graph">Graph</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/planner">Planner</Link>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/about")}>
+              About
             </Button>
             {!authLoading && (user ? <AccountMenu /> : <LoginButton variant="outline" />)}
           </nav>
@@ -160,13 +137,27 @@ export default function GraphPage() {
           </div>
 
           <div className="border-b p-6">
-            <h2 className="text-lg font-semibold mb-4">Course Filters</h2>
+            <h2 className="text-lg font-semibold mb-4">Course Search</h2>
             <CourseSearch
               courses={courses}
               onSelect={handleSelectCourse}
               onFiltersChange={setDepartments}
             />
           </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">My Course Plan</h2>
+                <Button size="sm" variant="outline">
+                  Export PDF
+                </Button>
+              </div>
+              <CoursePlan courses={plannedCourses} onRemoveCourse={handleRemoveFromPlan} />
+            </div>
+          </div>
+
+          {/* Premium upsell removed */}
         </motion.aside>
 
         <div className="flex-1 relative">

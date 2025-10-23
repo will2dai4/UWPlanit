@@ -1,6 +1,6 @@
 {
-  "name": "UWPlanit",
-  "short_name": "UWPlanit",
+  "name": "UW Course Graph & Planner",
+  "short_name": "UW Graph",
   "description": "Interactive course dependency visualization and planning tool for University of Waterloo students",
   "start_url": "/",
   "display": "standalone",

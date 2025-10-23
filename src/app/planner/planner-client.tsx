@@ -3,7 +3,6 @@
 import { useState, useEffect, startTransition, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
 import type { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/account-menu";
@@ -63,55 +62,42 @@ export function PlannerClient() {
   const addCourseToPlan = trpc.plan.addCourse.useMutation();
   const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
   const updatePositions = trpc.plan.updatePositions.useMutation();
-  
-  // Track if courses have been initialized to prevent infinite loops
-  const coursesInitializedRef = useRef(false);
-    
+
   useEffect(() => {
-    if (allCourses.length > 0 && !coursesInitializedRef.current) {
+    if (allCourses.length > 0) {
       setCourses(allCourses);
-      coursesInitializedRef.current = true;
     }
   }, [allCourses]);
-
-  // Track if plan has been initialized to prevent infinite loops
-  const planInitializedRef = useRef(false);
 
   // Initialize or create active plan
   useEffect(() => {
     const initializePlan = async () => {
       if (planLoading) return;
-      if (planInitializedRef.current) return; // Already initialized
 
       if (activePlan) {
         // Load existing plan
         setActivePlanId(activePlan.id);
-        
-        // Batch all position updates into a single state update
-        const positionsMap = new Map<string, { x: number; y: number }>();
         
         // Load courses from plan
         const coursesFromPlan = activePlan.courses?.map((pc) => {
           // Store plan_courses id for later updates
           planCoursesMapRef.current.set(pc.course_id, pc.id);
           
-          // Collect saved positions
+          // Load saved positions if available
           if (pc.position_x !== null && pc.position_y !== null) {
-            positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+            setNodePositions(prev => {
+              const newMap = new Map(prev);
+              newMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+              return newMap;
+            });
           }
           
           return pc.course;
         }).filter((c): c is Course => c !== null && c !== undefined) || [];
 
-        // Update positions only once if we have any
-        if (positionsMap.size > 0) {
-          setNodePositions(positionsMap);
-        }
-
         setPlannedCourses(coursesFromPlan);
-        planInitializedRef.current = true; // Mark as initialized
-      } else if (!planLoading) {
-        // Create a new default plan only if not loading and no plan exists
+      } else {
+        // Create a new default plan
         try {
           const newPlan = await createPlan.mutateAsync({
             name: "My Course Plan",
@@ -119,7 +105,6 @@ export function PlannerClient() {
             is_active: true,
           });
           setActivePlanId(newPlan.id);
-          planInitializedRef.current = true; // Mark as initialized
           toast({
             title: "Plan Created",
             description: "A new course plan has been created for you.",
@@ -136,8 +121,7 @@ export function PlannerClient() {
     };
 
     initializePlan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePlan, planLoading]);
+  }, [activePlan, planLoading, createPlan, toast]);
 
   // Auto-save positions with debouncing
   const savePositionsToDatabase = useCallback(
@@ -340,27 +324,17 @@ export function PlannerClient() {
   return (
     <main className="flex h-screen flex-col bg-slate-50">
       {/* Top nav – removed sidebar toggle */}
-      <header className="relative z-[100] border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
+      <header className="border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div 
-            className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => router.push("/")}
-          >
+          <div className="flex items-center space-x-3">
             <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              UWPlanit
+              Course Planner
             </h1>
           </div>
-          <nav className="flex items-center space-x-3 relative z-10 pointer-events-auto">
-            <Button variant="ghost" size="sm" asChild className="relative z-10 pointer-events-auto">
-              <Link href="/">Home</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="relative z-10 pointer-events-auto">
-              <Link href="/graph">Graph</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="relative z-10 pointer-events-auto">
-              <Link href="/planner">Planner</Link>
-            </Button>
+          <nav className="flex items-center space-x-3">
+            <Button variant="ghost" size="sm" onClick={() => router.push("/")}>Home</Button>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/graph")}>Graph</Button>
             <AccountMenu />
           </nav>
         </div>
