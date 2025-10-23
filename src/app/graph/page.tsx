@@ -14,6 +14,24 @@ import { LoginButton } from "@/components/auth/login-button";
 import { AccountMenu } from "@/components/account-menu";
 import { trpc } from "@/lib/trpc";
 
+/**
+ * Load department filters from cookie
+ */
+function loadDepartmentsFromCookie(): string[] {
+  if (typeof document === "undefined") return [];
+  const cookies = document.cookie.split("; ");
+  const cookie = cookies.find((c) => c.startsWith("uwplanit_department_filters="));
+  if (!cookie) return [];
+  
+  try {
+    const value = decodeURIComponent(cookie.split("=")[1]);
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 const CourseSearch = dynamic(
   () => import("@/components/course-search").then((m) => m.CourseSearch),
   { ssr: false }
@@ -37,7 +55,8 @@ export default function GraphPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   // Empty `departments` now means show all courses.
-  const [departments, setDepartments] = useState<string[]>([]);
+  // Initialize from cookie to restore user's last filter selection
+  const [departments, setDepartments] = useState<string[]>(() => loadDepartmentsFromCookie());
 
   // Load courses from database via tRPC
   const { data: allCourses = [], isLoading: coursesLoading, error: coursesError } = trpc.course.getAll.useQuery();
@@ -141,27 +160,13 @@ export default function GraphPage() {
           </div>
 
           <div className="border-b p-6">
-            <h2 className="text-lg font-semibold mb-4">Course Search</h2>
+            <h2 className="text-lg font-semibold mb-4">Course Filters</h2>
             <CourseSearch
               courses={courses}
               onSelect={handleSelectCourse}
               onFiltersChange={setDepartments}
             />
           </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">My Course Plan</h2>
-                <Button size="sm" variant="outline">
-                  Export PDF
-                </Button>
-              </div>
-              <CoursePlan courses={plannedCourses} onRemoveCourse={handleRemoveFromPlan} />
-            </div>
-          </div>
-
-          {/* Premium upsell removed */}
         </motion.aside>
 
         <div className="flex-1 relative">

@@ -63,42 +63,55 @@ export function PlannerClient() {
   const addCourseToPlan = trpc.plan.addCourse.useMutation();
   const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
   const updatePositions = trpc.plan.updatePositions.useMutation();
-
+  
+  // Track if courses have been initialized to prevent infinite loops
+  const coursesInitializedRef = useRef(false);
+    
   useEffect(() => {
-    if (allCourses.length > 0) {
+    if (allCourses.length > 0 && !coursesInitializedRef.current) {
       setCourses(allCourses);
+      coursesInitializedRef.current = true;
     }
   }, [allCourses]);
+
+  // Track if plan has been initialized to prevent infinite loops
+  const planInitializedRef = useRef(false);
 
   // Initialize or create active plan
   useEffect(() => {
     const initializePlan = async () => {
       if (planLoading) return;
+      if (planInitializedRef.current) return; // Already initialized
 
       if (activePlan) {
         // Load existing plan
         setActivePlanId(activePlan.id);
+        
+        // Batch all position updates into a single state update
+        const positionsMap = new Map<string, { x: number; y: number }>();
         
         // Load courses from plan
         const coursesFromPlan = activePlan.courses?.map((pc) => {
           // Store plan_courses id for later updates
           planCoursesMapRef.current.set(pc.course_id, pc.id);
           
-          // Load saved positions if available
+          // Collect saved positions
           if (pc.position_x !== null && pc.position_y !== null) {
-            setNodePositions(prev => {
-              const newMap = new Map(prev);
-              newMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
-              return newMap;
-            });
+            positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
           }
           
           return pc.course;
         }).filter((c): c is Course => c !== null && c !== undefined) || [];
 
+        // Update positions only once if we have any
+        if (positionsMap.size > 0) {
+          setNodePositions(positionsMap);
+        }
+
         setPlannedCourses(coursesFromPlan);
-      } else {
-        // Create a new default plan
+        planInitializedRef.current = true; // Mark as initialized
+      } else if (!planLoading) {
+        // Create a new default plan only if not loading and no plan exists
         try {
           const newPlan = await createPlan.mutateAsync({
             name: "My Course Plan",
@@ -106,6 +119,7 @@ export function PlannerClient() {
             is_active: true,
           });
           setActivePlanId(newPlan.id);
+          planInitializedRef.current = true; // Mark as initialized
           toast({
             title: "Plan Created",
             description: "A new course plan has been created for you.",
@@ -122,7 +136,8 @@ export function PlannerClient() {
     };
 
     initializePlan();
-  }, [activePlan, planLoading, createPlan, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePlan, planLoading]);
 
   // Auto-save positions with debouncing
   const savePositionsToDatabase = useCallback(
