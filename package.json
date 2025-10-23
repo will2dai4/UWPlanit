@@ -9,7 +9,9 @@
     "lint": "next lint",
     "seed": "ts-node scripts/seed-courses.ts",
     "seed:courses": "tsx scripts/seed-courses-to-supabase.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "verify-env": "tsx scripts/verify-env.ts",
+    "predeploy": "npm run lint && npm run build"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.0.0",
