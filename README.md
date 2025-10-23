@@ -1,210 +1,367 @@
 # UWPlanit
 
-A modern web application for University of Waterloo students to visualize course dependencies and plan their academic journey.
+A modern, interactive web application for University of Waterloo students to visualize course dependencies and plan their academic journey with confidence.
+
+<div align="center">
+
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Stars](https://img.shields.io/github/stars/yourusername/uwplanit?style=social)](https://github.com/yourusername/uwplanit/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/yourusername/uwplanit?style=social)](https://github.com/yourusername/uwplanit/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/pulls)
+
+[![Last Commit](https://img.shields.io/github/last-commit/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/commits/main)
+[![Repo Size](https://img.shields.io/github/repo-size/yourusername/uwplanit)](https://github.com/yourusername/uwplanit)
+[![Contributors](https://img.shields.io/github/contributors/yourusername/uwplanit)](https://github.com/yourusername/uwplanit/graphs/contributors)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
+</div>
 
 ## Features
 
-- Interactive course dependency graph visualization
-- Course search with fuzzy matching
-- Course details with prerequisites, corequisites, and antirequisites
-- Course planning with drag-and-drop functionality
-- Responsive design for all devices
+### Interactive Course Graph
+- **Force-directed graph visualization** powered by D3.js and Visx
+- Visual representation of course dependencies (prerequisites, corequisites, antirequisites)
+- Department filtering with fuzzy search (Fuse.js)
+- Smooth animations and transitions with Framer Motion
+- Responsive zoom and pan controls
+
+### Course Catalog
+- Comprehensive UW course database
+- Advanced search with fuzzy matching
+- Detailed course information including:
+  - Prerequisites, corequisites, and antirequisites
+  - Course descriptions
+  - Term offerings
+  - Department and subject classification
+
+### Course Planner
+- Drag-and-drop interface for planning terms
+- Visual prerequisite validation
+- Multi-term planning support
+- Save and manage multiple plans
+- Position persistence for custom graph layouts
+
+### User Authentication
+- Secure authentication with Auth0
+- User profile management
+- Personalized course plans
+- Multi-device sync
+
+### Modern UI/UX
+- Beautiful, responsive design with Tailwind CSS
+- Accessible components from Radix UI and Shadcn UI
+- Dark mode support (via next-themes)
+- Smooth animations and micro-interactions
+- Mobile-optimized with floating action buttons
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 with App Router
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
+### Frontend
+- **Framework:** Next.js 14 (App Router) with React Server Components
+- **Language:** TypeScript 5.3
+- **Styling:** Tailwind CSS with custom design tokens
 - **UI Components:** Radix UI, Shadcn UI
-- **Authentication:** Auth0
+- **Animations:** Framer Motion
+- **State Management:** Zustand, TanStack Query (React Query)
+
+### Backend & API
+- **API Layer:** tRPC for end-to-end type safety
+- **Authentication:** Auth0 (@auth0/nextjs-auth0)
 - **Database:** Supabase (PostgreSQL)
-- **State Management:** Zustand, TanStack Query
-- **API:** tRPC
-- **Visualization:** Force Graph, D3.js, Visx
+- **ORM:** Supabase JS Client
+
+### Visualization & Search
+- **Graph Rendering:** Force Graph, D3.js, Visx
 - **Search:** Fuse.js (fuzzy search)
+- **Graph Library:** Graphology
+
+### PWA & Performance
 - **PWA:** @ducanh2912/next-pwa
+- **Monitoring:** Sentry (@sentry/nextjs)
+- **Optimization:** Dynamic imports, code splitting, lazy loading
+
+### Development Tools
+- **Linting:** ESLint with TypeScript support
+- **Formatting:** Prettier
+- **Package Manager:** npm
+- **Build Tool:** Next.js with Turbopack
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- An [Auth0](https://auth0.com/) account (free tier available)
-- A [Supabase](https://supabase.com/) project (free tier available)
+Before you begin, ensure you have the following installed:
+- **Node.js** 18+ and npm
+- **Git** for version control
 
-### Setup Instructions
+You'll also need accounts for:
+- **[Auth0](https://auth0.com/)** (free tier available) - for authentication
+- **[Supabase](https://supabase.com/)** (free tier available) - for database
 
-1. Clone the repository:
+### 1. Clone the Repository
 
    ```bash
-   git clone https://github.com/yourusername/uw-graph.git
-   cd uw-graph
+git clone https://github.com/yourusername/uwplanit.git
+cd uwplanit
    ```
 
-2. Install dependencies:
+### 2. Install Dependencies
 
    ```bash
    npm install
    ```
 
-3. Set up environment variables:
+### 3. Environment Configuration
 
-   Copy `.env.example` to `.env.local` and fill in your credentials:
+Create a `.env.local` file in the root directory with the following variables:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```env
+# Auth0 Configuration
+AUTH0_SECRET=                    # Generate with: openssl rand -hex 32
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_ISSUER_BASE_URL=           # Your Auth0 domain (e.g., https://your-tenant.auth0.com)
+AUTH0_CLIENT_ID=                 # From Auth0 Application Settings
+AUTH0_CLIENT_SECRET=             # From Auth0 Application Settings
 
-   **Required environment variables:**
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=        # Your Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Supabase anon/public key
+SUPABASE_SERVICE_ROLE_KEY=       # Supabase service role key (keep secure!)
 
-   **Auth0 Setup:**
-   - Go to [Auth0 Dashboard](https://manage.auth0.com/)
-   - Create a new application (type: Regular Web Application)
-   - Get your credentials from the application settings:
-     - `AUTH0_CLIENT_ID` - Your application's Client ID
-     - `AUTH0_CLIENT_SECRET` - Your application's Client Secret
-     - `AUTH0_ISSUER_BASE_URL` - Your Auth0 domain (e.g., `https://your-tenant.auth0.com`)
-   - Set Allowed Callback URLs: `http://localhost:3000/api/auth/callback`
-   - Set Allowed Logout URLs: `http://localhost:3000`
-   - Generate `AUTH0_SECRET`:
+# Optional: Sentry (Error Monitoring)
+NEXT_PUBLIC_SENTRY_DSN=          # Your Sentry DSN
+```
+
+#### Setting up Auth0
+
+1. Go to the [Auth0 Dashboard](https://manage.auth0.com/)
+2. Create a new application (type: **Regular Web Application**)
+3. In Application Settings, configure:
+   - **Allowed Callback URLs:** `http://localhost:3000/api/auth/callback`
+   - **Allowed Logout URLs:** `http://localhost:3000`
+   - **Allowed Web Origins:** `http://localhost:3000`
+4. Copy the `Client ID`, `Client Secret`, and `Domain` to your `.env.local`
+5. Generate `AUTH0_SECRET`:
      ```bash
      openssl rand -hex 32
      ```
-   - Set `AUTH0_BASE_URL=http://localhost:3000` (for development)
 
-   **Supabase Setup:**
-   - Go to [Supabase Dashboard](https://app.supabase.com/)
-   - Create a new project or select an existing one
-   - Navigate to Project Settings > API
-   - Copy the following values:
-     - `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` - Your project URL
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - The `anon` public key
-     - `SUPABASE_SERVICE_ROLE_KEY` - The `service_role` secret key (keep this secure!)
+#### Setting up Supabase
 
-4. Run database migrations:
+1. Go to the [Supabase Dashboard](https://app.supabase.com/)
+2. Create a new project (note down the database password)
+3. Navigate to **Project Settings → API**
+4. Copy the following values:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role** key → `SUPABASE_SERVICE_ROLE_KEY`
 
-   Navigate to the Supabase SQL Editor and run the migrations in order:
+### 4. Database Setup
+
+Run the database migrations in order using the Supabase SQL Editor:
+
+1. Navigate to **SQL Editor** in your Supabase dashboard
+2. Execute each migration file in order:
    - `supabase/migrations/0001_create_courses_table.sql`
    - `supabase/migrations/0002_create_users_and_plans.sql`
+   - `supabase/migrations/0003_add_coordinates_to_plan_courses.sql`
 
-   Alternatively, if you have the Supabase CLI:
+Alternatively, if you have the Supabase CLI installed:
+
    ```bash
+# Link your project
    supabase link --project-ref your-project-ref
+
+# Push migrations
    supabase db push
    ```
 
-   See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for detailed migration instructions.
+### 5. Seed Course Data (Optional)
 
-5. Run the development server:
+If you want to populate the database with UW course data:
+
+```bash
+npm run seed:courses
+```
+
+This will fetch and parse course data from the UW API and insert it into your Supabase database.
+
+### 6. Run the Development Server
 
    ```bash
    npm run dev
    ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+
+### 7. Build for Production
+
+```bash
+npm run build
+npm start
+```
 
 ## Database Schema
 
-The application uses three main tables:
+The application uses the following main tables:
 
-- **`courses`** - University course catalog
-- **`users`** - User profiles (synced with Auth0)
-- **`course_plans`** - User-created course plans
-- **`plan_courses`** - Courses in each plan with scheduling info
+### `courses`
+Stores the complete UW course catalog with:
+- Course code, name, and description
+- Department and subject classification
+- Prerequisites, corequisites, and antirequisites
+- Terms offered and other metadata
 
-For detailed schema information and migration instructions, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md).
+### `users`
+User profiles synced with Auth0:
+- Auth0 user ID (external reference)
+- User metadata (name, email, etc.)
+- Preferences and settings
+
+### `course_plans`
+User-created academic plans:
+- Plan name and description
+- Active/inactive status
+- Creation and modification timestamps
+- User ownership
+
+### `plan_courses`
+Courses within each plan:
+- Course assignments to specific terms/years
+- Visual graph coordinates (position_x, position_y)
+- Custom notes and metadata
+
+
 
 ## API Documentation
 
 ### tRPC Routers
 
-The application uses tRPC for type-safe API calls:
+The application uses tRPC for type-safe API communication between client and server.
 
-- **`course`** - Course catalog operations
-  - `getAll()` - Get all courses
-  - `getById(id)` - Get course by ID
-  - `search(query)` - Search courses
+#### **Course Router** (`course`)
 
-- **`user`** - User profile management
-  - `getProfile()` - Get current user profile
-  - `upsertProfile(data)` - Create/update profile
-  - `updateProfile(data)` - Update profile
+| Procedure | Type | Parameters | Description |
+|-----------|------|------------|-------------|
+| `getAll` | Query | - | Fetch all courses from database |
+| `getById` | Query | `{ id: string }` | Fetch a single course by ID |
+| `search` | Query | `{ query: string }` | Search courses by code or name |
 
-- **`plan`** - Course planning operations
-  - `getAll()` - Get all user plans
-  - `getActive()` - Get active plan
-  - `getById(id)` - Get plan by ID
-  - `create(data)` - Create new plan
-  - `update(data)` - Update plan
-  - `delete(id)` - Delete plan
-  - `addCourse(data)` - Add course to plan
-  - `updateCourse(data)` - Update course in plan
-  - `removeCourse(id)` - Remove course from plan
+#### **User Router** (`user`)
 
-## Project Structure
+| Procedure | Type | Parameters | Description |
+|-----------|------|------------|-------------|
+| `getProfile` | Query | - | Get current user's profile |
+| `upsertProfile` | Mutation | `{ name, email, ... }` | Create or update user profile |
+| `updateProfile` | Mutation | `{ name, ... }` | Update existing profile |
 
-```
-src/
-├── app/                      # Next.js app directory
-│   ├── api/                 # API routes
-│   │   ├── auth/           # Auth0 authentication
-│   │   ├── profile/        # User profile management
-│   │   └── trpc/           # tRPC API endpoint
-│   ├── account/            # User account page
-│   ├── courses/            # Course catalog pages
-│   ├── planner/            # Course planner page
-│   ├── graph/              # Course graph visualization
-│   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Home page
-│   └── globals.css         # Global styles
-├── components/              # React components
-│   ├── ui/                 # UI components (Shadcn)
-│   ├── auth/               # Authentication components
-│   ├── course-graph.tsx    # Course graph visualization
-│   ├── course-search.tsx   # Course search component
-│   ├── course-drawer.tsx   # Course details drawer
-│   └── course-plan.tsx     # Course plan component
-├── server/                  # Server-side code
-│   ├── routers/            # tRPC routers
-│   │   ├── course.ts       # Course operations
-│   │   ├── user.ts         # User operations
-│   │   ├── plan.ts         # Planning operations
-│   │   └── _app.ts         # Router aggregation
-│   └── trpc.ts             # tRPC configuration
-├── lib/                     # Utility functions
-│   ├── auth-server.ts      # Server-side auth utils
-│   ├── supabase.ts         # Supabase client
-│   ├── supabase.types.ts   # Generated DB types
-│   ├── plans.ts            # Planning utilities
-│   ├── trpc.ts             # tRPC client setup
-│   └── utils.ts            # General utilities
-└── types/                   # TypeScript types
-    ├── course.ts           # Course types
-    └── user.ts             # User and plan types
-supabase/
-├── migrations/              # Database migrations
-│   ├── 0001_create_courses_table.sql
-│   └── 0002_create_users_and_plans.sql
-└── example_queries.sql      # Example SQL queries
-```
+#### **Plan Router** (`plan`)
+
+| Procedure | Type | Parameters | Description |
+|-----------|------|------------|-------------|
+| `getAll` | Query | - | Get all plans for current user |
+| `getActive` | Query | - | Get the active plan |
+| `getById` | Query | `{ id: string }` | Get a specific plan |
+| `create` | Mutation | `{ name, description }` | Create a new plan |
+| `update` | Mutation | `{ id, name, ... }` | Update an existing plan |
+| `delete` | Mutation | `{ id: string }` | Delete a plan |
+| `addCourse` | Mutation | `{ planId, courseId, term, ... }` | Add a course to a plan |
+| `updateCourse` | Mutation | `{ id, term, position, ... }` | Update course in plan |
+| `removeCourse` | Mutation | `{ id: string }` | Remove course from plan |
+
+## Styling & Theming
+
+The application uses a modern design system built with Tailwind CSS and CSS variables for theming:
+
+- **Color Palette:** Customizable via CSS variables in `globals.css`
+- **Components:** Built with Radix UI primitives and styled with Tailwind
+- **Animations:** Framer Motion for smooth transitions
+- **Responsive:** Mobile-first approach with breakpoints at 640px, 768px, 1024px, 1280px
+- **Dark Mode:** Built-in support (can be enabled/disabled via next-themes)
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format code with Prettier |
+| `npm run seed:courses` | Seed database with course data |
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import project to Vercel
+3. Configure environment variables in Vercel dashboard
+4. Deploy!
+
+### Other Platforms
+
+The application can be deployed to any platform that supports Next.js:
+- **Railway**
+- **Netlify**
+- **AWS Amplify**
+- **DigitalOcean App Platform**
+
+Make sure to:
+1. Set all required environment variables
+2. Configure build command: `npm run build`
+3. Configure start command: `npm start`
+4. Set Node.js version to 18+
+
+## Security Best Practices
+
+- **Never commit** `.env.local` or expose sensitive keys
+- Keep `SUPABASE_SERVICE_ROLE_KEY` secure (server-side only)
+- Use Auth0's recommended security settings
+- Enable Row Level Security (RLS) in Supabase
+- Regular dependency updates for security patches
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add some amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Contribution Guidelines
+
+- Follow the existing code style and conventions
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- [University of Waterloo](https://uwaterloo.ca/) for course data
-- [Next.js](https://nextjs.org/) for the framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Radix UI](https://www.radix-ui.com/) for accessible components
-- [Force Graph](https://github.com/vasturiano/force-graph) for graph visualization
-- [Fuse.js](https://fusejs.io/) for fuzzy search
+- **[University of Waterloo](https://uwaterloo.ca/)** for course data
+- **[Next.js](https://nextjs.org/)** for the incredible framework
+- **[Vercel](https://vercel.com/)** for hosting and deployment platform
+- **[Tailwind CSS](https://tailwindcss.com/)** for the utility-first CSS framework
+- **[Radix UI](https://www.radix-ui.com/)** for accessible component primitives
+- **[Shadcn UI](https://ui.shadcn.com/)** for beautiful component designs
+- **[Force Graph](https://github.com/vasturiano/force-graph)** for graph visualization
+- **[D3.js](https://d3js.org/)** for data visualization primitives
+- **[Fuse.js](https://fusejs.io/)** for fuzzy search functionality
+- **[Auth0](https://auth0.com/)** for authentication infrastructure
+- **[Supabase](https://supabase.com/)** for database and backend services
+
+---
+
+**Built for UW students** | Star this repo if you find it helpful!
