@@ -14,7 +14,7 @@ interface CourseSearchProps {
   onSelect: (course: Course) => void;
   /**
    * Emits whenever the department tag selection changes. An empty array means
-   * "no filtering" (i.e. show all departments).
+   * "no courses shown" (i.e. no departments selected).
    */
   onFiltersChange?: (departments: string[]) => void;
   showDepartments?: boolean; // new prop
@@ -33,17 +33,17 @@ function saveDepartmentsToCookie(departments: string[]): void {
 }
 
 function loadDepartmentsFromCookie(): string[] {
-  if (typeof document === "undefined") return [];
+  if (typeof document === "undefined") return ["CS", "MATH"]; // Default for SSR
   const cookies = document.cookie.split("; ");
   const cookie = cookies.find((c) => c.startsWith(`${COOKIE_NAME}=`));
-  if (!cookie) return [];
+  if (!cookie) return ["CS", "MATH"]; // Default to CS and MATH when no cookie exists
   
   try {
     const value = decodeURIComponent(cookie.split("=")[1]);
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["CS", "MATH"];
   } catch {
-    return [];
+    return ["CS", "MATH"];
   }
 }
 

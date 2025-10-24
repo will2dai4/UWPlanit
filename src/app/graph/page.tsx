@@ -17,17 +17,17 @@ import { trpc } from "@/lib/trpc";
  * Load department filters from cookie
  */
 function loadDepartmentsFromCookie(): string[] {
-  if (typeof document === "undefined") return [];
+  if (typeof document === "undefined") return ["CS", "MATH"]; // Default for SSR
   const cookies = document.cookie.split("; ");
   const cookie = cookies.find((c) => c.startsWith("uwplanit_department_filters="));
-  if (!cookie) return [];
+  if (!cookie) return ["CS", "MATH"]; // Default to CS and MATH when no cookie exists
   
   try {
     const value = decodeURIComponent(cookie.split("=")[1]);
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["CS", "MATH"];
   } catch {
-    return [];
+    return ["CS", "MATH"];
   }
 }
 
@@ -49,8 +49,8 @@ export default function GraphPage() {
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
-  // Empty `departments` now means show all courses.
-  // Initialize from cookie to restore user's last filter selection
+  // Empty `departments` means show no courses. Non-empty filters courses by selected departments.
+  // Initialize from cookie to restore user's last filter selection, defaults to ["CS", "MATH"]
   const [departments, setDepartments] = useState<string[]>(() => loadDepartmentsFromCookie());
 
   // Load courses from database via tRPC
@@ -68,7 +68,7 @@ export default function GraphPage() {
   const filteredCourses = useMemo(() => {
     if (!courses.length) return [] as Course[];
     if (departments.length === 0) {
-      return courses; // No filters selected → show all courses
+      return []; // No filters selected → show no courses
     }
     return courses.filter((c) => departments.includes(c.department));
   }, [courses, departments]);
