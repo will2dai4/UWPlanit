@@ -340,7 +340,7 @@ export function PlannerClient() {
   return (
     <main className="flex h-screen flex-col bg-slate-50">
       {/* Top nav – removed sidebar toggle */}
-      <header className="relative z-[100] border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
+      <header className="relative border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div 
             className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"

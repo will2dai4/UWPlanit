@@ -1,4 +1,6 @@
 import dynamicImport from "next/dynamic";
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +9,14 @@ const PlannerClient = dynamicImport(() => import("./planner-client").then((m) =>
   ssr: false,
 });
 
-export default function PlannerPage() {
-  // Public access for all users.
+export default async function PlannerPage() {
+  // Check if user is authenticated
+  const session = await getServerSession();
+  
+  // Redirect to login page if not authenticated
+  if (!session) {
+    redirect("/auth");
+  }
+
   return <PlannerClient />;
 } 
