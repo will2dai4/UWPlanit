@@ -1,4 +1,8 @@
-# UWPlanit
+<p align="center">
+  <img src="https://uwplanit.com/assets/uwplanit-colour-logo.svg" />
+</p>
+
+# [UWPlanit](https://uwplanit.com)
 
 A modern, interactive web application for University of Waterloo students to visualize course dependencies and plan their academic journey with confidence.
 
@@ -122,9 +126,6 @@ AUTH0_CLIENT_SECRET=             # From Auth0 Application Settings
 NEXT_PUBLIC_SUPABASE_URL=        # Your Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Supabase anon/public key
 SUPABASE_SERVICE_ROLE_KEY=       # Supabase service role key (keep secure!)
-
-# Optional: Sentry (Error Monitoring)
-NEXT_PUBLIC_SENTRY_DSN=          # Your Sentry DSN
 ```
 
 #### Setting up Auth0
@@ -325,11 +326,6 @@ This application is optimized for deployment on Vercel. Follow these steps:
    NEXT_PUBLIC_SUPABASE_ANON_KEY=<from-supabase>
    SUPABASE_URL=<from-supabase>
    SUPABASE_SERVICE_ROLE_KEY=<from-supabase>
-   ```
-   
-   **Optional:**
-   ```
-   NEXT_PUBLIC_SENTRY_DSN=<for-error-tracking>
    ```
 
 4. **Update Auth0 Settings**
