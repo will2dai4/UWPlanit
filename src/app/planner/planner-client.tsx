@@ -59,6 +59,7 @@ export function PlannerClient() {
   
   // Load or create active plan
   const { data: activePlan, isLoading: planLoading } = trpc.plan.getActive.useQuery();
+  const { data: userProfile } = trpc.user.getProfile.useQuery();
   const createPlan = trpc.plan.create.useMutation();
   const addCourseToPlan = trpc.plan.addCourse.useMutation();
   const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
@@ -111,6 +112,18 @@ export function PlannerClient() {
         setPlannedCourses(coursesFromPlan);
         planInitializedRef.current = true; // Mark as initialized
       } else if (!planLoading) {
+        // Check if user has completed their profile before creating a plan
+        if (!userProfile || !userProfile.program || !userProfile.current_term) {
+          // User hasn't completed their profile, redirect to account page
+          toast({
+            title: "Complete Your Profile",
+            description: "Please complete your profile information to start planning courses.",
+            variant: "destructive",
+          });
+          router.push("/account");
+          return;
+        }
+
         // Create a new default plan only if not loading and no plan exists
         try {
           const newPlan = await createPlan.mutateAsync({
@@ -126,11 +139,22 @@ export function PlannerClient() {
           });
         } catch (error) {
           console.error("Failed to create plan:", error);
-          toast({
-            title: "Error",
-            description: "Failed to create a course plan. Please try again.",
-            variant: "destructive",
-          });
+          
+          // Check if the error might be due to incomplete profile
+          if (!userProfile || !userProfile.program || !userProfile.current_term) {
+            toast({
+              title: "Complete Your Profile",
+              description: "Please complete your profile information to start planning courses.",
+              variant: "destructive",
+            });
+            router.push("/account");
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to create a course plan. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       }
     };
@@ -219,15 +243,26 @@ export function PlannerClient() {
           console.error("Failed to add course to plan:", error);
           // Rollback UI change on error
           setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
-          toast({
-            title: "Error",
-            description: "Failed to add course to plan. Please try again.",
-            variant: "destructive",
-          });
+          
+          // Check if the error might be due to incomplete profile
+          if (!userProfile || !userProfile.program || !userProfile.current_term) {
+            toast({
+              title: "Complete Your Profile",
+              description: "Please complete your profile information to add courses to your plan.",
+              variant: "destructive",
+            });
+            router.push("/account");
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to add course to plan. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       }
     },
-    [activePlanId, plannedCourses, addCourseToPlan, toast]
+    [activePlanId, plannedCourses, addCourseToPlan, toast, userProfile, router]
   );
 
   const handleRemoveCourse = useCallback(
