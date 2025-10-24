@@ -102,7 +102,13 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
     );
 
     // 3️⃣ Fuzzy fallback on remaining courses (code + name)
-    const fuzzyResults = term.length >= 3 ? fuse.search(term, { limit: LIMITED_RESULTS }).map((r) => r.item) : [];
+    // Exclude courses already found in code or description matches
+    const allFoundIds = new Set([...codeMatches, ...descMatches].map((c) => c.id));
+    const fuzzyResults = term.length >= 3 
+      ? fuse.search(term, { limit: LIMITED_RESULTS })
+          .map((r) => r.item)
+          .filter((c) => !allFoundIds.has(c.id))
+      : [];
 
     return [...codeMatches, ...descMatches, ...fuzzyResults];
   }, [deferredQuery, courses, fuse]);
