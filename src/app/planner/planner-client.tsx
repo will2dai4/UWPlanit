@@ -10,6 +10,14 @@ import { AccountMenu } from "@/components/account-menu";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  getActivePlan,
+  createLocalPlan,
+  addCourseToLocalPlan,
+  removeCourseFromLocalPlan,
+  updateLocalPlanPositions,
+} from "@/lib/local-storage-plans";
+import { Database, HardDrive } from "lucide-react";
 
 // Lazy-load heavy components
 const CourseSearch = dynamic(
@@ -47,6 +55,8 @@ export function PlannerClient() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null = checking, true = authenticated, false = not authenticated
+  const [useLocalStorage, setUseLocalStorage] = useState(false);
   
   // Refs for tracking changes
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,9 +67,24 @@ export function PlannerClient() {
    * ---------------------------------------------------------- */
   const { data: allCourses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
   
-  // Load or create active plan
-  const { data: activePlan, isLoading: planLoading } = trpc.plan.getActive.useQuery();
-  const { data: userProfile } = trpc.user.getProfile.useQuery();
+  // Try to load user profile to detect authentication (only call if potentially authenticated)
+  const { data: userProfile, isLoading: profileLoading, error: profileError } = trpc.user.getProfile.useQuery(
+    undefined,
+    {
+      enabled: isAuthenticated !== false, // Don't call if we know they're not authenticated
+      retry: false,
+    }
+  );
+  
+  // Load or create active plan (only for authenticated users)
+  const { data: activePlan, isLoading: planLoading } = trpc.plan.getActive.useQuery(
+    undefined,
+    {
+      enabled: isAuthenticated === true,
+      retry: false,
+    }
+  );
+  
   const createPlan = trpc.plan.create.useMutation();
   const addCourseToPlan = trpc.plan.addCourse.useMutation();
   const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
@@ -67,6 +92,27 @@ export function PlannerClient() {
   
   // Track if courses have been initialized to prevent infinite loops
   const coursesInitializedRef = useRef(false);
+  
+  // Detect authentication status
+  useEffect(() => {
+    if (isAuthenticated === null) {
+      // Check if we're still loading the profile
+      if (profileLoading) {
+        return; // Still checking
+      }
+      
+      // If profile loaded successfully, user is authenticated
+      if (userProfile) {
+        setIsAuthenticated(true);
+        setUseLocalStorage(false);
+      } 
+      // If profile failed to load (error), user is not authenticated
+      else if (profileError) {
+        setIsAuthenticated(false);
+        setUseLocalStorage(true);
+      }
+    }
+  }, [userProfile, profileLoading, profileError, isAuthenticated]);
     
   useEffect(() => {
     if (allCourses.length > 0 && !coursesInitializedRef.current) {
@@ -78,92 +124,143 @@ export function PlannerClient() {
   // Track if plan has been initialized to prevent infinite loops
   const planInitializedRef = useRef(false);
 
-  // Initialize or create active plan
+  // Initialize or create active plan (works for both authenticated and unauthenticated users)
   useEffect(() => {
     const initializePlan = async () => {
-      if (planLoading) return;
+      // Wait until we know the authentication status
+      if (isAuthenticated === null) return;
       if (planInitializedRef.current) return; // Already initialized
 
-      if (activePlan) {
-        // Load existing plan
-        setActivePlanId(activePlan.id);
-        
-        // Batch all position updates into a single state update
-        const positionsMap = new Map<string, { x: number; y: number }>();
-        
-        // Load courses from plan
-        const coursesFromPlan = activePlan.courses?.map((pc) => {
-          // Store plan_courses id for later updates
-          planCoursesMapRef.current.set(pc.course_id, pc.id);
+      // AUTHENTICATED USER - use database
+      if (isAuthenticated) {
+        if (planLoading) return;
+
+        if (activePlan) {
+          // Load existing plan from database
+          setActivePlanId(activePlan.id);
           
-          // Collect saved positions
-          if (pc.position_x !== null && pc.position_y !== null) {
-            positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+          // Batch all position updates into a single state update
+          const positionsMap = new Map<string, { x: number; y: number }>();
+          
+          // Load courses from plan
+          const coursesFromPlan = activePlan.courses?.map((pc) => {
+            // Store plan_courses id for later updates
+            planCoursesMapRef.current.set(pc.course_id, pc.id);
+            
+            // Collect saved positions
+            if (pc.position_x !== null && pc.position_y !== null) {
+              positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+            }
+            
+            return pc.course;
+          }).filter((c): c is Course => c !== null && c !== undefined) || [];
+
+          // Update positions only once if we have any
+          if (positionsMap.size > 0) {
+            setNodePositions(positionsMap);
           }
-          
-          return pc.course;
-        }).filter((c): c is Course => c !== null && c !== undefined) || [];
 
-        // Update positions only once if we have any
-        if (positionsMap.size > 0) {
-          setNodePositions(positionsMap);
-        }
-
-        setPlannedCourses(coursesFromPlan);
-        planInitializedRef.current = true; // Mark as initialized
-      } else if (!planLoading) {
-        // Check if user has completed their profile before creating a plan
-        if (!userProfile || !userProfile.program || !userProfile.current_term) {
-          // User hasn't completed their profile, redirect to account page
-          toast({
-            title: "Complete Your Profile",
-            description: "Please complete your profile information to start planning courses.",
-            variant: "destructive",
-          });
-          router.push("/account");
-          return;
-        }
-
-        // Create a new default plan only if not loading and no plan exists
-        try {
-          const newPlan = await createPlan.mutateAsync({
-            name: "My Course Plan",
-            description: "Default course plan",
-            is_active: true,
-          });
-          setActivePlanId(newPlan.id);
+          setPlannedCourses(coursesFromPlan);
           planInitializedRef.current = true; // Mark as initialized
-          toast({
-            title: "Plan Created",
-            description: "A new course plan has been created for you.",
-          });
-        } catch (error) {
-          console.error("Failed to create plan:", error);
-          
-          // Check if the error might be due to incomplete profile
+        } else if (!planLoading) {
+          // Check if user has completed their profile before creating a plan
           if (!userProfile || !userProfile.program || !userProfile.current_term) {
+            // User hasn't completed their profile, redirect to account page
             toast({
               title: "Complete Your Profile",
               description: "Please complete your profile information to start planning courses.",
               variant: "destructive",
             });
             router.push("/account");
-          } else {
-            toast({
-              title: "Error",
-              description: "Failed to create a course plan. Please try again.",
-              variant: "destructive",
-            });
+            return;
           }
+
+          // Create a new default plan only if not loading and no plan exists
+          try {
+            const newPlan = await createPlan.mutateAsync({
+              name: "My Course Plan",
+              description: "Default course plan",
+              is_active: true,
+            });
+            setActivePlanId(newPlan.id);
+            planInitializedRef.current = true; // Mark as initialized
+            toast({
+              title: "Plan Created",
+              description: "A new course plan has been created for you.",
+            });
+          } catch (error) {
+            console.error("Failed to create plan:", error);
+            
+            // Check if the error might be due to incomplete profile
+            if (!userProfile || !userProfile.program || !userProfile.current_term) {
+              toast({
+                title: "Complete Your Profile",
+                description: "Please complete your profile information to start planning courses.",
+                variant: "destructive",
+              });
+              router.push("/account");
+            } else {
+              toast({
+                title: "Error",
+                description: "Failed to create a course plan. Please try again.",
+                variant: "destructive",
+              });
+            }
+          }
+        }
+      } 
+      // UNAUTHENTICATED USER - use local storage
+      else {
+        const localPlan = getActivePlan();
+        
+        if (localPlan) {
+          // Load existing plan from local storage
+          setActivePlanId(localPlan.id);
+          
+          const positionsMap = new Map<string, { x: number; y: number }>();
+          
+          // Load courses from plan
+          const coursesFromPlan = localPlan.courses.map((pc) => {
+            // Collect saved positions
+            if (pc.position_x !== null && pc.position_y !== null && 
+                pc.position_x !== undefined && pc.position_y !== undefined) {
+              positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
+            }
+            
+            return pc.course;
+          });
+
+          // Update positions only once if we have any
+          if (positionsMap.size > 0) {
+            setNodePositions(positionsMap);
+          }
+
+          setPlannedCourses(coursesFromPlan);
+          planInitializedRef.current = true;
+        } else {
+          // Create a new default plan in local storage
+          const newPlan = createLocalPlan(
+            "My Course Plan",
+            "Default course plan stored locally",
+            undefined,
+            undefined,
+            true
+          );
+          setActivePlanId(newPlan.id);
+          planInitializedRef.current = true;
+          toast({
+            title: "Plan Created",
+            description: "A new course plan has been created in your browser.",
+          });
         }
       }
     };
 
     initializePlan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePlan, planLoading]);
+  }, [activePlan, planLoading, isAuthenticated]);
 
-  // Auto-save positions with debouncing
+  // Auto-save positions with debouncing (works for both authenticated and unauthenticated)
   const savePositionsToDatabase = useCallback(
     (positions: Map<string, { x: number; y: number }>) => {
       if (!activePlanId) return;
@@ -183,17 +280,23 @@ export function PlannerClient() {
           }));
 
           if (positionsArray.length > 0) {
-            await updatePositions.mutateAsync({
-              plan_id: activePlanId,
-              positions: positionsArray,
-            });
+            if (useLocalStorage) {
+              // Save to local storage
+              updateLocalPlanPositions(activePlanId, positionsArray);
+            } else {
+              // Save to database
+              await updatePositions.mutateAsync({
+                plan_id: activePlanId,
+                positions: positionsArray,
+              });
+            }
           }
         } catch (error) {
           console.error("Failed to save positions:", error);
         }
       }, 1000);
     },
-    [activePlanId, updatePositions]
+    [activePlanId, updatePositions, useLocalStorage]
   );
 
   // Handle position changes from graph
@@ -217,35 +320,63 @@ export function PlannerClient() {
       // Add to UI immediately for responsiveness
       setPlannedCourses((prev) => [...prev, course]);
 
-      // Save to database
+      // Save to storage (database or local storage)
       if (activePlanId) {
         try {
-          const result = await addCourseToPlan.mutateAsync({
-            plan_id: activePlanId,
-            course_id: course.id,
-            term: "Unscheduled", // Default term
-            position_x: position?.x,
-            position_y: position?.y,
-          });
+          if (useLocalStorage) {
+            // Save to local storage
+            const result = addCourseToLocalPlan(
+              activePlanId,
+              course,
+              "Unscheduled",
+              undefined,
+              undefined,
+              undefined,
+              position?.x,
+              position?.y
+            );
 
-          // Store plan_courses id for later updates
-          planCoursesMapRef.current.set(course.id, result.id);
+            if (!result) {
+              throw new Error("Failed to add course to local plan");
+            }
 
-          // If position provided, update local state
-          if (position) {
-            setNodePositions((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(course.id, position);
-              return newMap;
+            // If position provided, update local state
+            if (position) {
+              setNodePositions((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(course.id, position);
+                return newMap;
+              });
+            }
+          } else {
+            // Save to database
+            const result = await addCourseToPlan.mutateAsync({
+              plan_id: activePlanId,
+              course_id: course.id,
+              term: "Unscheduled", // Default term
+              position_x: position?.x,
+              position_y: position?.y,
             });
+
+            // Store plan_courses id for later updates
+            planCoursesMapRef.current.set(course.id, result.id);
+
+            // If position provided, update local state
+            if (position) {
+              setNodePositions((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(course.id, position);
+                return newMap;
+              });
+            }
           }
         } catch (error) {
           console.error("Failed to add course to plan:", error);
           // Rollback UI change on error
           setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
           
-          // Check if the error might be due to incomplete profile
-          if (!userProfile || !userProfile.program || !userProfile.current_term) {
+          // Check if the error might be due to incomplete profile (authenticated users only)
+          if (!useLocalStorage && (!userProfile || !userProfile.program || !userProfile.current_term)) {
             toast({
               title: "Complete Your Profile",
               description: "Please complete your profile information to add courses to your plan.",
@@ -262,7 +393,7 @@ export function PlannerClient() {
         }
       }
     },
-    [activePlanId, plannedCourses, addCourseToPlan, toast, userProfile, router]
+    [activePlanId, plannedCourses, addCourseToPlan, toast, userProfile, router, useLocalStorage]
   );
 
   const handleRemoveCourse = useCallback(
@@ -270,12 +401,15 @@ export function PlannerClient() {
       // Remove from UI immediately
       setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
 
-      // Remove from database
-      const planCourseId = planCoursesMapRef.current.get(course.id);
-      if (planCourseId) {
-        try {
-          await removeCourseFromPlan.mutateAsync({ id: planCourseId });
-          planCoursesMapRef.current.delete(course.id);
+      try {
+        if (useLocalStorage) {
+          // Remove from local storage
+          if (activePlanId) {
+            const success = removeCourseFromLocalPlan(activePlanId, course.id);
+            if (!success) {
+              throw new Error("Failed to remove course from local plan");
+            }
+          }
           
           // Remove position
           setNodePositions((prev) => {
@@ -283,19 +417,33 @@ export function PlannerClient() {
             newMap.delete(course.id);
             return newMap;
           });
-        } catch (error) {
-          console.error("Failed to remove course from plan:", error);
-          // Rollback UI change on error
-          setPlannedCourses((prev) => [...prev, course]);
-          toast({
-            title: "Error",
-            description: "Failed to remove course from plan. Please try again.",
-            variant: "destructive",
-          });
+        } else {
+          // Remove from database
+          const planCourseId = planCoursesMapRef.current.get(course.id);
+          if (planCourseId) {
+            await removeCourseFromPlan.mutateAsync({ id: planCourseId });
+            planCoursesMapRef.current.delete(course.id);
+            
+            // Remove position
+            setNodePositions((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(course.id);
+              return newMap;
+            });
+          }
         }
+      } catch (error) {
+        console.error("Failed to remove course from plan:", error);
+        // Rollback UI change on error
+        setPlannedCourses((prev) => [...prev, course]);
+        toast({
+          title: "Error",
+          description: "Failed to remove course from plan. Please try again.",
+          variant: "destructive",
+        });
       }
     },
-    [removeCourseFromPlan, toast]
+    [removeCourseFromPlan, toast, useLocalStorage, activePlanId]
   );
 
   const handleSelectCourse = (course: Course | null) => {
@@ -364,7 +512,8 @@ export function PlannerClient() {
     };
   }, []);
 
-  if (coursesLoading || planLoading || !courses.length) {
+  // Show loading while checking authentication or loading courses
+  if (isAuthenticated === null || coursesLoading || (isAuthenticated && planLoading) || !courses.length) {
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <span className="animate-pulse text-sm text-slate-600">Loading courses…</span>
@@ -377,14 +526,30 @@ export function PlannerClient() {
       {/* Top nav – removed sidebar toggle */}
       <header className="relative border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div 
-            className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => router.push("/")}
-          >
-            <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              UWPlanit
-            </h1>
+          <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => router.push("/")}
+            >
+              <Image src="/assets/uwplanit-colour-logo.svg" alt="UWPlanit Logo" width={32} height={32} className="h-8 w-8" />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                UWPlanit
+              </h1>
+            </div>
+            {/* Storage mode indicator */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200">
+              {useLocalStorage ? (
+                <>
+                  <HardDrive className="h-4 w-4 text-slate-600" />
+                  <span className="text-xs font-medium text-slate-700">Local Storage</span>
+                </>
+              ) : (
+                <>
+                  <Database className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-700">Cloud Saved</span>
+                </>
+              )}
+            </div>
           </div>
           <nav className="flex items-center space-x-3 relative z-10 pointer-events-auto">
             <Button variant="ghost" size="sm" asChild className="relative z-10 pointer-events-auto">
