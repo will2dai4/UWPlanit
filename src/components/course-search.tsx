@@ -21,28 +21,31 @@ interface CourseSearchProps {
 }
 
 /**
- * Cookie utility functions for department filters
+ * Local storage utility functions for department filters
  */
-const COOKIE_NAME = "uwplanit_department_filters";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year in seconds
+const STORAGE_KEY = "uwplanit_department_filters";
 
-function saveDepartmentsToCookie(departments: string[]): void {
-  if (typeof document === "undefined") return;
-  const value = JSON.stringify(departments);
-  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Lax`;
+function saveDepartmentsToLocalStorage(departments: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const value = JSON.stringify(departments);
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch (error) {
+    console.error("Failed to save department filters to localStorage:", error);
+  }
 }
 
-function loadDepartmentsFromCookie(): string[] {
-  if (typeof document === "undefined") return ["CS", "MATH"]; // Default for SSR
-  const cookies = document.cookie.split("; ");
-  const cookie = cookies.find((c) => c.startsWith(`${COOKIE_NAME}=`));
-  if (!cookie) return ["CS", "MATH"]; // Default to CS and MATH when no cookie exists
+function loadDepartmentsFromLocalStorage(): string[] {
+  if (typeof window === "undefined") return ["CS", "MATH"]; // Default for SSR
   
   try {
-    const value = decodeURIComponent(cookie.split("=")[1]);
+    const value = localStorage.getItem(STORAGE_KEY);
+    if (!value) return ["CS", "MATH"]; // Default to CS and MATH when no stored value exists
+    
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["CS", "MATH"];
-  } catch {
+  } catch (error) {
+    console.error("Failed to load department filters from localStorage:", error);
     return ["CS", "MATH"];
   }
 }
@@ -55,8 +58,8 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
   const deferredQuery = useDeferredValue(query);
   const [open, setOpen] = useState(false);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>(() => {
-    // Initialize from cookie on mount
-    return loadDepartmentsFromCookie();
+    // Initialize from local storage on mount
+    return loadDepartmentsFromLocalStorage();
   });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
@@ -161,9 +164,9 @@ export function CourseSearch({ courses, onSelect, onFiltersChange, showDepartmen
     }
   }, [open]);
 
-  // Save to cookie and notify parent when department chips change
+  // Save to local storage and notify parent when department chips change
   useEffect(() => {
-    saveDepartmentsToCookie(selectedDepartments);
+    saveDepartmentsToLocalStorage(selectedDepartments);
     onFiltersChange?.(selectedDepartments);
   }, [selectedDepartments, onFiltersChange]);
 

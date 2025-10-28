@@ -14,19 +14,19 @@ import { AccountMenu } from "@/components/account-menu";
 import { trpc } from "@/lib/trpc";
 
 /**
- * Load department filters from cookie
+ * Load department filters from local storage
  */
-function loadDepartmentsFromCookie(): string[] {
-  if (typeof document === "undefined") return ["CS", "MATH"]; // Default for SSR
-  const cookies = document.cookie.split("; ");
-  const cookie = cookies.find((c) => c.startsWith("uwplanit_department_filters="));
-  if (!cookie) return ["CS", "MATH"]; // Default to CS and MATH when no cookie exists
+function loadDepartmentsFromLocalStorage(): string[] {
+  if (typeof window === "undefined") return ["CS", "MATH"]; // Default for SSR
   
   try {
-    const value = decodeURIComponent(cookie.split("=")[1]);
+    const value = localStorage.getItem("uwplanit_department_filters");
+    if (!value) return ["CS", "MATH"]; // Default to CS and MATH when no stored value exists
+    
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["CS", "MATH"];
-  } catch {
+  } catch (error) {
+    console.error("Failed to load department filters from localStorage:", error);
     return ["CS", "MATH"];
   }
 }
@@ -50,8 +50,8 @@ export default function GraphPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   // Empty `departments` means show no courses. Non-empty filters courses by selected departments.
-  // Initialize from cookie to restore user's last filter selection, defaults to ["CS", "MATH"]
-  const [departments, setDepartments] = useState<string[]>(() => loadDepartmentsFromCookie());
+  // Initialize from local storage to restore user's last filter selection, defaults to ["CS", "MATH"]
+  const [departments, setDepartments] = useState<string[]>(() => loadDepartmentsFromLocalStorage());
 
   // Load courses from database via tRPC
   const { data: allCourses = [], isLoading: coursesLoading, error: coursesError } = trpc.course.getAll.useQuery();
