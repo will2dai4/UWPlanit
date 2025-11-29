@@ -18,11 +18,11 @@ import { trpc } from "@/lib/trpc";
  */
 function loadDepartmentsFromLocalStorage(): string[] {
   if (typeof window === "undefined") return ["CS", "MATH"]; // Default for SSR
-  
+
   try {
     const value = localStorage.getItem("uwplanit_department_filters");
     if (!value) return ["CS", "MATH"]; // Default to CS and MATH when no stored value exists
-    
+
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : ["CS", "MATH"];
   } catch (error) {
@@ -46,6 +46,7 @@ const CourseDrawer = dynamic(
 export default function GraphPage() {
   const { user, isLoading: authLoading } = useUser();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -166,6 +167,7 @@ export default function GraphPage() {
             courses={graphCourses}
             selectedCourse={selectedCourse}
             onSelectCourse={handleSelectCourse}
+            onViewDetails={setViewingCourse}
           />
 
           <motion.button
@@ -180,8 +182,8 @@ export default function GraphPage() {
       </div>
 
       <CourseDrawer
-        course={selectedCourse}
-        onClose={() => setSelectedCourse(null)}
+        course={viewingCourse}
+        onClose={() => setViewingCourse(null)}
         onAddToPlan={handleAddToPlan}
       />
     </main>

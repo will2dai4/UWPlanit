@@ -46,10 +46,11 @@ const CoursePlan = dynamic(
 export function PlannerClient() {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   // State management
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
   const [plannedCourses, setPlannedCourses] = useState<Course[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -57,7 +58,7 @@ export function PlannerClient() {
   const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null = checking, true = authenticated, false = not authenticated
   const [useLocalStorage, setUseLocalStorage] = useState(false);
-  
+
   // Refs for tracking changes
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const planCoursesMapRef = useRef<Map<string, string>>(new Map()); // courseId -> plan_courses.id
@@ -66,7 +67,7 @@ export function PlannerClient() {
    *  Load dataset from database via tRPC
    * ---------------------------------------------------------- */
   const { data: allCourses = [], isLoading: coursesLoading } = trpc.course.getAll.useQuery();
-  
+
   // Try to load user profile to detect authentication (only call if potentially authenticated)
   const { data: userProfile, isLoading: profileLoading, error: profileError } = trpc.user.getProfile.useQuery(
     undefined,
@@ -75,7 +76,7 @@ export function PlannerClient() {
       retry: false,
     }
   );
-  
+
   // Load or create active plan (only for authenticated users)
   const { data: activePlan, isLoading: planLoading } = trpc.plan.getActive.useQuery(
     undefined,
@@ -84,15 +85,15 @@ export function PlannerClient() {
       retry: false,
     }
   );
-  
+
   const createPlan = trpc.plan.create.useMutation();
   const addCourseToPlan = trpc.plan.addCourse.useMutation();
   const removeCourseFromPlan = trpc.plan.removeCourse.useMutation();
   const updatePositions = trpc.plan.updatePositions.useMutation();
-  
+
   // Track if courses have been initialized to prevent infinite loops
   const coursesInitializedRef = useRef(false);
-  
+
   // Detect authentication status
   useEffect(() => {
     if (isAuthenticated === null) {
@@ -100,12 +101,12 @@ export function PlannerClient() {
       if (profileLoading) {
         return; // Still checking
       }
-      
+
       // If profile loaded successfully, user is authenticated
       if (userProfile) {
         setIsAuthenticated(true);
         setUseLocalStorage(false);
-      } 
+      }
       // If profile failed to load (error), user is not authenticated
       else if (profileError) {
         setIsAuthenticated(false);
@@ -113,7 +114,7 @@ export function PlannerClient() {
       }
     }
   }, [userProfile, profileLoading, profileError, isAuthenticated]);
-    
+
   useEffect(() => {
     if (allCourses.length > 0 && !coursesInitializedRef.current) {
       setCourses(allCourses);
@@ -138,20 +139,20 @@ export function PlannerClient() {
         if (activePlan) {
           // Load existing plan from database
           setActivePlanId(activePlan.id);
-          
+
           // Batch all position updates into a single state update
           const positionsMap = new Map<string, { x: number; y: number }>();
-          
+
           // Load courses from plan
           const coursesFromPlan = activePlan.courses?.map((pc) => {
             // Store plan_courses id for later updates
             planCoursesMapRef.current.set(pc.course_id, pc.id);
-            
+
             // Collect saved positions
             if (pc.position_x !== null && pc.position_y !== null) {
               positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
             }
-            
+
             return pc.course;
           }).filter((c): c is Course => c !== null && c !== undefined) || [];
 
@@ -190,7 +191,7 @@ export function PlannerClient() {
             });
           } catch (error) {
             console.error("Failed to create plan:", error);
-            
+
             // Check if the error might be due to incomplete profile
             if (!userProfile || !userProfile.program || !userProfile.current_term) {
               toast({
@@ -208,25 +209,25 @@ export function PlannerClient() {
             }
           }
         }
-      } 
+      }
       // UNAUTHENTICATED USER - use local storage
       else {
         const localPlan = getActivePlan();
-        
+
         if (localPlan) {
           // Load existing plan from local storage
           setActivePlanId(localPlan.id);
-          
+
           const positionsMap = new Map<string, { x: number; y: number }>();
-          
+
           // Load courses from plan
           const coursesFromPlan = localPlan.courses.map((pc) => {
             // Collect saved positions
-            if (pc.position_x !== null && pc.position_y !== null && 
-                pc.position_x !== undefined && pc.position_y !== undefined) {
+            if (pc.position_x !== null && pc.position_y !== null &&
+              pc.position_x !== undefined && pc.position_y !== undefined) {
               positionsMap.set(pc.course_id, { x: pc.position_x, y: pc.position_y });
             }
-            
+
             return pc.course;
           });
 
@@ -374,7 +375,7 @@ export function PlannerClient() {
           console.error("Failed to add course to plan:", error);
           // Rollback UI change on error
           setPlannedCourses((prev) => prev.filter((c) => c.id !== course.id));
-          
+
           // Check if the error might be due to incomplete profile (authenticated users only)
           if (!useLocalStorage && (!userProfile || !userProfile.program || !userProfile.current_term)) {
             toast({
@@ -410,7 +411,7 @@ export function PlannerClient() {
               throw new Error("Failed to remove course from local plan");
             }
           }
-          
+
           // Remove position
           setNodePositions((prev) => {
             const newMap = new Map(prev);
@@ -423,7 +424,7 @@ export function PlannerClient() {
           if (planCourseId) {
             await removeCourseFromPlan.mutateAsync({ id: planCourseId });
             planCoursesMapRef.current.delete(course.id);
-            
+
             // Remove position
             setNodePositions((prev) => {
               const newMap = new Map(prev);
@@ -474,10 +475,10 @@ export function PlannerClient() {
 
   const handleBulkDelete = useCallback(async () => {
     const coursesToDelete = plannedCourses.filter((c) => selectedNodeIds.includes(c.id));
-    
+
     // Delete all selected courses
     await Promise.all(coursesToDelete.map((course) => handleRemoveCourse(course)));
-    
+
     setSelectedNodeIds([]);
   }, [plannedCourses, selectedNodeIds, handleRemoveCourse]);
 
@@ -527,7 +528,7 @@ export function PlannerClient() {
       <header className="relative border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-4">
-            <div 
+            <div
               className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => router.push("/")}
             >
@@ -577,6 +578,7 @@ export function PlannerClient() {
               if (c) handleAddCourse(c);
               handleSelectCourse(c);
             }}
+            onViewDetails={setViewingCourse}
             selectedNodeIds={selectedNodeIds}
             selectionMode={selectionMode}
             onToggleNodeSelection={handleToggleNodeSelection}
@@ -602,7 +604,7 @@ export function PlannerClient() {
       </div>
 
       {/* Course details drawer */}
-      <CourseDrawer course={selectedCourse} onClose={() => setSelectedCourse(null)} onAddToPlan={handleAddCourse} />
+      <CourseDrawer course={viewingCourse} onClose={() => setViewingCourse(null)} onAddToPlan={handleAddCourse} />
     </main>
   );
-} 
+}

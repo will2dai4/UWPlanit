@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { Course } from "@/types/course";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ZoomIn, ZoomOut, RotateCcw, Filter, Maximize2, CheckSquare, Trash2, X } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Filter, Maximize2, CheckSquare, Trash2, X, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Group } from "@visx/group";
 import { scaleOrdinal } from "@visx/scale";
 import { motion } from "framer-motion";
@@ -20,6 +20,7 @@ interface CourseGraphProps {
   courses: Course[];
   selectedCourse: Course | null;
   onSelectCourse: (course: Course | null) => void;
+  onViewDetails?: (course: Course) => void;
   selectedNodeIds?: string[];
   selectionMode?: boolean;
   onToggleNodeSelection?: (nodeId: string) => void;
@@ -44,12 +45,8 @@ interface Link {
   type: "prerequisite" | "corequisite" | "antirequisite";
 }
 
-// Show all edges when the visible graph is reasonably small. The user requested
-// edges to remain visible up to 1000 nodes.
 const MAX_NODES_FOR_EDGES = 1000;
 
-// Fixed department ordering – ensures concentric layout radii remain stable even
-// when the visible list of departments changes with filters.
 const DEPARTMENT_ORDER = [
   "CS",
   "MATH",
@@ -63,10 +60,6 @@ const DEPARTMENT_ORDER = [
   "ENG",
 ];
 
-// Assign deterministic, stable indices for departments that are not in the
-// predefined list. Once a department gets an index it never changes during the
-// session, guaranteeing concentric radii remain constant for already-rendered
-// departments when additional ones are selected later.
 const unknownDeptIndexMap = new Map<string, number>();
 
 function getDeptRingIndex(dept: string): number {
@@ -81,7 +74,6 @@ function getDeptRingIndex(dept: string): number {
   return idx;
 }
 
-// Color scheme for different departments (aligned to the fixed order above)
 const colorScale = scaleOrdinal({
   domain: DEPARTMENT_ORDER,
   range: [
@@ -98,13 +90,13 @@ const colorScale = scaleOrdinal({
   ],
 });
 
-// Normalise course ids / codes so "CS136" and "CS 136" match
 const normalizeId = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 
-export function CourseGraph({ 
-  courses, 
-  selectedCourse, 
+export function CourseGraph({
+  courses,
+  selectedCourse,
   onSelectCourse,
+  onViewDetails,
   selectedNodeIds = [],
   selectionMode = false,
   onToggleNodeSelection,
@@ -137,7 +129,7 @@ export function CourseGraph({
   // Sync with external initial positions when they change
   // Use a ref to track if we've already initialized to prevent infinite loops
   const initializedRef = useRef(false);
-  
+
   useEffect(() => {
     if (initialNodePositions && initialNodePositions.size > 0 && !initializedRef.current) {
       setNodePositions(new Map(initialNodePositions));
@@ -413,6 +405,25 @@ export function CourseGraph({
     nodePositionsRef.current = nodePositions;
   }, [nodePositions]);
 
+  // Pan to selected node when it changes
+  useEffect(() => {
+    if (selectedCourse && nodes.length > 0) {
+      const node = nodes.find((n) => n.id === selectedCourse.id);
+      if (node) {
+        // Calculate target pan to center the node
+        // We want: center.x = pan.x + node.x * zoom
+        // So: pan.x = center.x - node.x * zoom
+        const centerX = dimensions.width / 2;
+        const centerY = dimensions.height / 2;
+
+        const targetPanX = centerX - node.x * zoom;
+        const targetPanY = centerY - node.y * zoom;
+
+        setPan({ x: targetPanX, y: targetPanY });
+      }
+    }
+  }, [selectedCourse, nodes, dimensions, zoom]);
+
   // Get current position for rendering (temp position if dragging, otherwise stored/calculated)
   const getCurrentPosition = (node: Node) => {
     // If currently dragging, prefer the temp position for snappy feedback
@@ -431,7 +442,7 @@ export function CourseGraph({
       e.stopPropagation();
       // If the node has been moved during this interaction, treat as drag not click
       if (hasMovedRef.current) return;
-      
+
       // In selection mode, toggle selection instead of opening drawer
       if (selectionMode) {
         onToggleNodeSelection?.(node.id);
@@ -803,7 +814,11 @@ export function CourseGraph({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <Group transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+        <motion.g
+          animate={{ x: pan.x, y: pan.y, scale: zoom }}
+          transition={isDragging ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+          style={{ transformOrigin: "0 0" }}
+        >
           {/* Arrow marker definition */}
           <defs>
             <marker
@@ -953,7 +968,7 @@ export function CourseGraph({
               </g>
             );
           })}
-        </Group>
+        </motion.g>
       </motion.svg>
 
       {/* Context Menu */}
@@ -1115,22 +1130,74 @@ export function CourseGraph({
         </motion.div>
       </div>
 
-      {/* Performance indicator */}
-      <div className="absolute top-4 right-4">
+      {/* Node Switcher & Stats */}
+      <div className="absolute top-4 right-4 flex flex-col items-end space-y-2">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.2 }}
+          className="flex items-center space-x-2 rounded-lg bg-white/90 backdrop-blur-sm p-1 shadow-lg border border-white/20"
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (!visibleNodes.length) return;
+              const currentIndex = selectedCourse
+                ? visibleNodes.findIndex(n => n.id === selectedCourse.id)
+                : -1;
+              const prevIndex = currentIndex <= 0 ? visibleNodes.length - 1 : currentIndex - 1;
+              onSelectCourse(visibleNodes[prevIndex].course);
+            }}
+            title="Previous Course"
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="min-w-[80px] text-center font-semibold text-sm">
+            {selectedCourse ? selectedCourse.code : "Select"}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (!visibleNodes.length) return;
+              const currentIndex = selectedCourse
+                ? visibleNodes.findIndex(n => n.id === selectedCourse.id)
+                : -1;
+              const nextIndex = currentIndex >= visibleNodes.length - 1 ? 0 : currentIndex + 1;
+              onSelectCourse(visibleNodes[nextIndex].course);
+            }}
+            title="Next Course"
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          {selectedCourse && onViewDetails && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onViewDetails(selectedCourse)}
+              title="View Details"
+              className="h-8 w-8 text-blue-600 hover:text-blue-700"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.2 }}
           className="rounded-lg bg-white/90 backdrop-blur-sm px-3 py-2 shadow-lg border border-white/20"
         >
-          <div className="text-xs text-gray-600 font-medium">
-            {visibleNodes.length}/{nodes.length} nodes • {links.length} edges
+          <div className="text-xs text-gray-600 font-medium text-right">
+            {visibleNodes.length} nodes • {links.length} edges
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {layoutType.charAt(0).toUpperCase() + layoutType.slice(1)} Layout • Zoom:{" "}
-            {zoom.toFixed(1)}x
-          </div>
-          <div className="text-xs text-gray-500">Scroll to zoom • Click & drag to pan</div>
         </motion.div>
       </div>
     </div>
